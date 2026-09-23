@@ -298,6 +298,12 @@ html.reduced .bg-knob{transition:none;}
   .bg-rail{gap:0;bottom:0.9rem;padding:0.45rem 0.8rem;}
   .bg-rail-name,.bg-rail-idx{display:none;}
   .bg-rail-track{width:130px;}
+  /* 内容页底部留出固定切换栏空间，末行内容与发送按钮不被遮挡 */
+  #work,#about,#lab,#contact{padding-bottom:9rem;}
+  /* 页码指示器精简为纯数字，避免与切换栏相撞 */
+  .pager{bottom:1rem;}
+  .pg-label{display:none;}
+  .pg-track{width:64px;}
 }
 
 /* ============ SECTIONS COMMON ============ */
@@ -328,6 +334,10 @@ html.reduced .reveal{opacity:1;transform:none;}
 .page::-webkit-scrollbar{display:none;}
 section.page{padding:clamp(4rem,10vh,7rem) var(--pad);}
 .book-track > section.hero{padding:0 var(--pad) calc(var(--pad) + 1rem);}
+@media (max-width:767px){
+  /* 首页大标题让出固定导航，避免与左上角 logo 重叠 */
+  .book-track > section.hero{padding-top:4.7rem;}
+}
 /* stacked-page spine: hairline + soft shadow on the left edge of every page after the first */
 .book-track > .page + .page::before{
   content:'';position:absolute;left:0;top:0;bottom:0;width:1px;
@@ -1329,7 +1339,7 @@ footer a:hover{color:var(--accent);}
       </form>
       <div class="contact-side">
         <span class="side-label mono">ELSEWHERE</span>
-        <a class="social-link" href="https://github.com/" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="social-link" href="https://github.com/0505ttt" target="_blank" rel="noopener">GitHub ↗</a>
       </div>
     </div>
     <footer class="contact-foot">
@@ -1364,7 +1374,7 @@ footer a:hover{color:var(--accent);}
       <a class="u-link ov-mail" href="mailto:3122904081@qq.com">3122904081@qq.com</a>
       <span>上海 · 中国 — 31.2304° N, 121.4737° E</span>
       <span class="ov-social">
-        <a class="u-link" href="https://github.com/" target="_blank" rel="noopener">GitHub ↗</a>
+        <a class="u-link" href="https://github.com/0505ttt" target="_blank" rel="noopener">GitHub ↗</a>
       </span>
     </div>
   </div>
