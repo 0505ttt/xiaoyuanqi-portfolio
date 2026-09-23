@@ -2054,8 +2054,7 @@ footer a:hover{color:var(--accent);}
 
   /* ---------- Hero hints：About → 换背景 → 翻页（顺序引导，仅首次访问） ---------- */
   (function(){
-    var KEY = 'xyq-hints-v1';
-    try{ if (localStorage.getItem(KEY)) return; }catch(e){}
+    /* 每次打开页面都重新提醒（不做 once-only 记录） */
     var wrap = document.getElementById('hints');
     if (!wrap) return;
     var aboutEl = wrap.querySelector('.hint--about');
@@ -2064,7 +2063,6 @@ footer a:hover{color:var(--accent);}
     var done = false;
     function finish(){
       if (done) return; done = true;
-      try{ localStorage.setItem(KEY, '1'); }catch(e){}
     }
     function play(el, at, hold, isLast){
       setTimeout(function(){
