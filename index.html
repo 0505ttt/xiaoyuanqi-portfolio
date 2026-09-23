@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XIAO YUANQI 肖袁琪 — AI 应用工程师</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B1E26'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFFBF2'/%3E%3C/svg%3E">
 <meta name="description" content="肖袁琪 XIAO YUANQI — AI 应用 / Agent 开发应届生个人作品集：样机管理智能体、多模态情感记忆平台、病虫害识别、语音填表、投研 Agent 工作台">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,8 +53,6 @@ html[data-bg="5"]{
 body{transition:background-color 0.9s var(--ease),color 0.9s var(--ease);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:auto;}
-html.lenis,html.lenis body{height:auto;}
-.lenis.lenis-smooth{scroll-behavior:auto!important;}
 body{
   background:var(--bg);
   color:var(--fg);
@@ -324,25 +323,26 @@ html.reduced .reveal{opacity:1;transform:none;}
 }
 .section-title em{font-style:italic;}
 
-/* ============ BOOK LAYOUT (horizontal pages) ============ */
-.book{height:100svh;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+/* ============ BOOK LAYOUT（横-竖-横 混合路径书轨） ============
+   首页→作品：横向；作品→关于：竖向（拐角在作品正下方）；其后恢复横向 */
+.book{height:100svh;overflow:auto;overscroll-behavior:none;scrollbar-width:none;}
 .book::-webkit-scrollbar{display:none;}
-.book-track{display:flex;align-items:stretch;height:100%;position:relative;}
+.book-track{display:block;position:relative;width:400vw;height:200svh;}
 .page{
-  flex:0 0 100vw;height:100svh;position:relative;
+  width:100vw;height:100svh;position:absolute;left:0;top:0;
   overflow-y:auto;overflow-x:hidden;scrollbar-width:none;
 }
 .page::-webkit-scrollbar{display:none;}
+#hero{left:0;top:0;}
+#work{left:100vw;top:0;}
+#about{left:100vw;top:100svh;}
+#lab{left:200vw;top:100svh;}
+#contact{left:300vw;top:100svh;}
 section.page{padding:clamp(4rem,10vh,7rem) var(--pad);}
 .book-track > section.hero{padding:0 var(--pad) calc(var(--pad) + 1rem);}
 @media (max-width:767px){
   /* 首页大标题让出固定导航，避免与左上角 logo 重叠 */
   .book-track > section.hero{padding-top:4.7rem;}
-}
-/* stacked-page spine: hairline + soft shadow on the left edge of every page after the first */
-.book-track > .page + .page::before{
-  content:'';position:absolute;left:0;top:0;bottom:0;width:1px;
-  background:var(--line);z-index:6;pointer-events:none;
 }
 /* page unfold: content slides in as the page is turned */
 .page-inner{min-height:100%;transition:transform 0.9s var(--ease),opacity 0.9s var(--ease);}
@@ -697,6 +697,16 @@ footer a:hover{color:var(--accent);}
 }
 .go-start:hover{background:rgba(255,251,242,0.18);transform:scale(1.06);}
 
+/* ---- face 4: star journal (interactive constellation canvas) ---- */
+.hero-face--stars{background:#0E1220;}
+#starsCanvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:crosshair;}
+.stars-hud{
+  position:absolute;top:0.55rem;left:0.8rem;right:0.8rem;z-index:2;
+  display:flex;justify-content:space-between;gap:1rem;
+  font-size:0.6rem;letter-spacing:0.18em;color:var(--fg6);
+  pointer-events:none;
+}
+
 @media (max-width:767px){
   .hero-drum-wrap{width:min(88vw,520px);top:44%;}
   .drum-prev{left:0.4rem;}
@@ -790,26 +800,25 @@ footer a:hover{color:var(--accent);}
   animation:hintFloat 2.8s ease-in-out 0.75s infinite;}
 .hint.gone{opacity:0;filter:blur(6px);transform:translate(-50%,10px) scale(0.88);}
 @keyframes hintFloat{0%,100%{transform:translate(-50%,0) scale(1);}50%{transform:translate(-50%,-5px) scale(1);}}
-/* 指向小三角（玻璃质感） */
-.hint::after{
-  content:"";position:absolute;width:13px;height:13px;
-  background:rgba(250,251,254,0.62);
-  -webkit-backdrop-filter:blur(16px) saturate(1.6);
-  backdrop-filter:blur(16px) saturate(1.6);
-  transform:rotate(45deg);
-  box-shadow:2px 2px 6px rgba(28,42,66,0.08);
+/* 玻璃圆泡外的小弯箭头：手绘曲线 + 自动对齐的箭头，指向目标元素 */
+.hint-arrow{
+  position:absolute;overflow:visible;pointer-events:none;
+  opacity:0;transition:opacity 0.6s cubic-bezier(0.22,1,0.36,1) 0.25s;
 }
-/* ① About me：贴着右下角徽章上方，箭头指向它 */
-.hint--about{left:auto;right:2.2rem;top:auto;bottom:11.4rem;transform-origin:80% 100%;}
+.hint.show .hint-arrow{opacity:1;}
+.hint-arrow--about{right:2.5rem;top:calc(100% - 3px);width:2.5rem;height:3.4rem;}
+.hint-arrow--bg{left:50%;top:calc(100% - 3px);width:1.7rem;height:3.1rem;transform:translateX(-50%);}
+.hint.show .hint-arrow path{animation:arrowBob 2.2s ease-in-out 0.9s infinite;}
+@keyframes arrowBob{0%,100%{transform:translateY(0);}50%{transform:translateY(3.5px);}}
+/* ① About me：贴着右下角徽章上方，箭头弯向它 */
+.hint--about{left:auto;right:2.2rem;top:auto;bottom:12.6rem;transform-origin:80% 100%;}
 .hint--about.show{animation-name:hintFloatAbout;}
 .hint--about.gone{transform:translateY(10px) scale(0.88);}
 @keyframes hintFloatAbout{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(0,-4px) scale(1);}}
-.hint--about::after{bottom:-6px;right:38px;}
 .hint--about.show{animation:hintNudge 2s cubic-bezier(0.34,1.3,0.64,1) 0.7s infinite;}
 @keyframes hintNudge{0%,100%{transform:translate(0,0) scale(1);}14%{transform:translate(0,0) scale(0.94);}30%{transform:translate(0,0) scale(1.03);}44%{transform:translate(0,0) scale(1);}}
 /* ② 切换背景：贴着切换栏上方，箭头垂直指向它 */
-.hint--bg{top:auto;bottom:6.9rem;}
-.hint--bg::after{bottom:-6px;left:50%;margin-left:-6.5px;}
+.hint--bg{top:auto;bottom:7.6rem;}
 .hint--bg.show{animation:hintRock 2.4s ease-in-out 0.7s infinite;}
 @keyframes hintRock{0%,100%{transform:translate(-50%,0) scale(1);}30%{transform:translate(calc(-50% - 7px),0) scale(1);}70%{transform:translate(calc(-50% + 7px),0) scale(1);}}
 /* ③ 翻页：居中偏上，更大更醒目，强调是“翻整页” */
@@ -968,9 +977,23 @@ footer a:hover{color:var(--accent);}
 
 <!-- Pager -->
 <div class="hints" id="hints" aria-hidden="true">
-  <div class="hint hint--about">点这里 · About me</div>
-  <div class="hint hint--bg">拖动这里 · 切换背景</div>
-  <div class="hint hint--swipe"><span class="h-main">在页面空白处向左滑动 · 翻开下一页</span><span class="h-sub">← → 方向键也可以</span></div>
+  <div class="hint hint--about">点这里 · About me
+    <svg class="hint-arrow hint-arrow--about" viewBox="0 0 40 54" aria-hidden="true">
+      <defs><marker id="ha-about" markerWidth="7" markerHeight="7" refX="5.2" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 Z" fill="rgba(33,44,62,0.62)"/>
+      </marker></defs>
+      <path d="M7 3 C 24 10, 32 25, 31 45" fill="none" stroke="rgba(33,44,62,0.6)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#ha-about)"/>
+    </svg>
+  </div>
+  <div class="hint hint--bg">点按或拖动这里 · 切换背景
+    <svg class="hint-arrow hint-arrow--bg" viewBox="0 0 26 48" aria-hidden="true">
+      <defs><marker id="ha-bg" markerWidth="7" markerHeight="7" refX="5.2" refY="3.5" orient="auto">
+        <path d="M0,0 L7,3.5 L0,7 Z" fill="rgba(33,44,62,0.62)"/>
+      </marker></defs>
+      <path d="M13 2 C 13 18, 12 31, 9 42" fill="none" stroke="rgba(33,44,62,0.6)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#ha-bg)"/>
+    </svg>
+  </div>
+  <div class="hint hint--swipe"><span class="h-main">向下滑动或向左滑动 · 翻开下一页</span><span class="h-sub">手机下滑 · 电脑滚轮或 ← → 键</span></div>
 </div>
 </div>
 <div class="pager" id="pager" aria-hidden="true">
@@ -1078,6 +1101,11 @@ footer a:hover{color:var(--accent);}
             <div class="go-sub mono">FISH CATCHER · 移动接住小鱼，碰到黄瓜会失去一颗心</div>
             <button class="go-start" id="gameStart">点按开始</button>
           </div>
+        </div>
+
+        <div class="hero-face hero-face--stars" id="starsFace">
+          <canvas id="starsCanvas"></canvas>
+          <div class="stars-hud mono"><span>STAR JOURNAL · 星图手账</span><span id="starsCount">移动吸引星辰 · 点按落下一颗星</span></div>
         </div>
 
       </div>
@@ -1377,7 +1405,6 @@ footer a:hover{color:var(--accent);}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
 <script>
 (function(){
   'use strict';
@@ -1403,77 +1430,178 @@ footer a:hover{color:var(--accent);}
   }
   tick(); setInterval(tick, 1000);
 
-  /* ---------- Lenis smooth scroll: horizontal book ---------- */
+  /* ---------- 书轨控制器：s 虚拟坐标沿「横-竖-横」路径投影到二维滚动 ----------
+     s ∈ [0,4]：0 首页 → 1 作品（横向）→ 2 关于（竖向拐角）→ 3 实验场 → 4 联系（横向） */
   var book = document.getElementById('book');
-  var track = document.getElementById('bookTrack');
-  var lenis = null;
+  var sv = 0, s = 0;          /* 目标 / 当前 虚拟路径坐标 */
+
+  function sToXY(v){
+    var w = book.clientWidth, h = book.clientHeight;
+    if (v < 1) return [v * w, 0];
+    if (v < 2) return [w, (v - 1) * h];
+    return [(v - 1) * w, h];
+  }
+  function xyToS(x, y){
+    var w = Math.max(1, book.clientWidth), h = Math.max(1, book.clientHeight);
+    if (y < h * 0.5) return Math.max(0, Math.min(1, x / w));
+    return Math.max(2, Math.min(4, 1 + y / h + (x - w) / w));
+  }
+  function clampS(){ sv = Math.max(0, Math.min(4, sv)); }
+  function overlayOpen(){
+    var o = document.getElementById('aboutOverlay');
+    return !!(o && o.classList.contains('on'));
+  }
+  function applyS(){
+    var p = sToXY(s);
+    if (p[0] !== book.scrollLeft) book.scrollLeft = p[0];
+    if (p[1] !== book.scrollTop) book.scrollTop = p[1];
+  }
 
   /* vertical handoff: a page that overflows vertically (expanded WORK rows,
      tall lists) consumes the wheel up/down; only at its ends does the wheel
-     fall through to Lenis and flip the book sideways */
-  if (!REDUCED){
+     fall through to the book controller and flip the page along the path */
+  /* down=true 表示内容向页面底部滚动；返回 true 表示内层页已消费该手势 */
+  function innerConsumes(e, down, mag){
+    var pg = e.target && e.target.closest && e.target.closest('.page');
+    if (!pg || pg.scrollHeight <= pg.clientHeight + 2) return false;
+    var st = pg.scrollTop;
+    var atTop = st <= 1;
+    var atBottom = st + pg.clientHeight >= pg.scrollHeight - 1;
+    if ((down && !atBottom) || (!down && !atTop)){
+      e.preventDefault();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      pg.scrollTop = st + (down ? mag : -mag);
+      return true;
+    }
+    return false;
+  }
+  if (book){
     book.addEventListener('wheel', function(e){
-      if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
-      var pg = e.target && e.target.closest && e.target.closest('.page');
-      if (!pg || pg.scrollHeight <= pg.clientHeight + 2) return;
-      var st = pg.scrollTop, down = e.deltaY > 0;
-      var atTop = st <= 1;
-      var atBottom = st + pg.clientHeight >= pg.scrollHeight - 1;
-      if ((down && !atBottom) || (!down && !atTop)){
+      if (Math.abs(e.deltaY) < 0.5 && Math.abs(e.deltaX) < 0.5) return;
+      var vDom = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
+      var d = vDom ? e.deltaY : e.deltaX;
+      if (vDom && innerConsumes(e, d > 0, Math.abs(d))) return;
+      e.preventDefault();
+      if (overlayOpen()) return;
+      lastInput = performance.now();
+      sv += d / (book.clientHeight * 1.15);
+      clampS();
+    }, { capture:true, passive:false });
+
+    /* 触屏：竖向手势异步驱动书轨沿路径翻页（上滑 = 往后一页，下滑 = 往回一页；
+       一次滑动手势最多翻一页） */
+    var tLastY = 0, tLastX = 0, tActive = false, tAcc = 0, tAccX = 0, tFired = false;
+    book.addEventListener('touchstart', function(e){
+      tActive = true; tAcc = 0; tAccX = 0; tFired = false;
+      tLastY = e.touches[0].clientY; tLastX = e.touches[0].clientX;
+    }, { capture:true, passive:true });
+    book.addEventListener('touchend', function(){
+      tActive = false;
+      sv = xyToS(book.scrollLeft, book.scrollTop);
+    }, { capture:true, passive:true });
+    book.addEventListener('touchmove', function(e){
+      if (REDUCED || !tActive) return;
+      var dy = tLastY - e.touches[0].clientY; /* >0 手指上滑 = 向前翻 */
+      var dx = tLastX - e.touches[0].clientX; /* >0 手指左滑 = 向前翻 */
+      tLastY = e.touches[0].clientY; tLastX = e.touches[0].clientX;
+      if (Math.abs(dy) >= Math.abs(dx)){
+        if (Math.abs(dy) < 0.5) return;
+        if (innerConsumes(e, dy > 0, Math.abs(dy))) return;
         e.preventDefault();
-        e.stopImmediatePropagation();
-        pg.scrollTop = st + e.deltaY;
+        if (overlayOpen() || tFired) return;
+        lastInput = performance.now();
+        tAcc += dy; tAccX = 0;
+        if (Math.abs(tAcc) > 56){
+          sv = Math.round(xyToS(book.scrollLeft, book.scrollTop)) + (tAcc > 0 ? 1 : -1);
+          tFired = true; tAcc = 0;
+          clampS();
+        }
+      } else {
+        if (Math.abs(dx) < 0.5) return;
+        e.preventDefault();
+        if (overlayOpen() || tFired) return;
+        lastInput = performance.now();
+        tAccX += dx; tAcc = 0;
+        if (Math.abs(tAccX) > 56){
+          sv = Math.round(xyToS(book.scrollLeft, book.scrollTop)) + (tAccX > 0 ? 1 : -1);
+          tFired = true; tAccX = 0;
+          clampS();
+        }
       }
     }, { capture:true, passive:false });
-  }
-  if (!REDUCED && typeof window.Lenis !== 'undefined' && hasGsap){
-    lenis = new Lenis({
-      wrapper: book,
-      content: track,
-      orientation: 'horizontal',
-      duration: 1.2,
-      smoothWheel: true
-    });
-    lenis.on('scroll', function(){ updateProgress(); updateNavActive(); });
-    gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
-    gsap.ticker.lagSmoothing(0);
 
-    /* velocity skew: lists lean with horizontal travel, springy recovery */
-    var skewEls = gsap.utils.toArray('.work-list, .lab-list');
-    var skewCur = 0, skewApplied = false;
-    gsap.ticker.add(function(){
-      var v = lenis.velocity || 0;
-      var target = Math.max(-2, Math.min(2, v * 0.09));
-      skewCur += (target - skewCur) * 0.14;
-      if (Math.abs(skewCur) < 0.005){
-        if (skewApplied){
-          skewEls.forEach(function(el){ el.style.transform = ''; });
-          skewApplied = false;
-          skewCur = 0;
-        }
-        return;
+    /* 键盘 ← → 翻页（首页让给小猫/转盘，About 弹层打开时锁定） */
+    document.addEventListener('keydown', function(e){
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      if (overlayOpen()) return;
+      var w = book.clientWidth, h = book.clientHeight;
+      if (book.scrollTop < h * 0.5 && book.scrollLeft < w * 0.6) return; /* hero：交给转盘 */
+      var dir = e.key === 'ArrowRight' ? 1 : -1;
+      e.preventDefault();
+      lastInput = performance.now();
+      if (REDUCED){
+        var p0 = sToXY(Math.max(0, Math.min(4, Math.round(sv) + dir)));
+        book.scrollTo({ left: p0[0], top: p0[1] });
+        sv = xyToS(book.scrollLeft, book.scrollTop);
+      } else {
+        sv = Math.round(sv) + dir; clampS();
       }
-      var s = 'skewX(' + skewCur.toFixed(3) + 'deg)';
-      skewEls.forEach(function(el){ el.style.transform = s; });
-      skewApplied = true;
     });
-  } else if (book){
-    book.addEventListener('scroll', function(){ updateProgress(); updateNavActive(); }, { passive: true });
+
+    /* rAF：s 向 sv 平滑收敛（REDUCED 时立即跳转，不播放平滑动画；
+       仅 REDUCED 触屏原生滚动期间暂停驱动，避免与手指争抢；
+       滚轮/手势静止 380ms 后吸附到最近页格，让书停在整页上） */
+    var lastInput = performance.now();
+    function rafBook(){
+      if (!(REDUCED && tActive)){
+        if (!REDUCED && !tActive && performance.now() - lastInput > 380){
+          var r0 = Math.round(sv);
+          if (Math.abs(sv - r0) > 0.001){
+            sv += (r0 - sv) * 0.08;
+            if (Math.abs(sv - r0) < 0.001) sv = r0;
+          }
+        }
+        if (REDUCED){
+          if (Math.abs(sv - s) > 0.0001){ s = sv; applyS(); }
+        } else {
+          var ns = s + (sv - s) * 0.115;
+          if (Math.abs(sv - ns) < 0.0006) ns = sv;
+          if (ns !== s){ s = ns; applyS(); }
+        }
+      }
+      requestAnimationFrame(rafBook);
+    }
+    s = sv = xyToS(book.scrollLeft, book.scrollTop);
+    requestAnimationFrame(rafBook);
+
+    book.addEventListener('scroll', function(){ updateProgress(); updateNavActive(); }, { passive:true });
+    window.addEventListener('resize', function(){
+      sv = xyToS(book.scrollLeft, book.scrollTop); s = sv;
+      updateProgress();
+    });
   }
   updateProgress();
 
-  /* ---------- Anchor scrolling ---------- */
+  /* ---------- Anchor scrolling（沿书径跳转到对应页格） ---------- */
+  var PATH_S = { hero:0, work:1, about:2, lab:3, contact:4 };
+  function goToCell(i){
+    i = Math.max(0, Math.min(4, i));
+    lastInput = performance.now();
+    if (REDUCED){
+      var p0 = sToXY(i);
+      book.scrollTo({ left: p0[0], top: p0[1] });
+      sv = xyToS(book.scrollLeft, book.scrollTop);
+    } else {
+      sv = i; clampS();
+    }
+  }
   document.querySelectorAll('[data-scroll]').forEach(function(a){
     a.addEventListener('click', function(e){
       var id = a.getAttribute('href');
-      var target = id === '#top' ? document.body : document.querySelector(id);
-      if (!target) return;
+      var key = id === '#top' ? 'hero' : id.slice(1);
+      if (!(key in PATH_S)) return;
       e.preventDefault();
-      if (lenis){
-        lenis.scrollTo(id === '#top' ? 0 : target.offsetLeft, { duration: 1.4 });
-      } else {
-        book.scrollTo({ left: id === '#top' ? 0 : target.offsetLeft, behavior: REDUCED ? 'auto' : 'smooth' });
-      }
+      goToCell(PATH_S[key]);
     });
   });
 
@@ -1491,8 +1619,7 @@ footer a:hover{color:var(--accent);}
     var playerIdx = faces.findIndex(function(f){ return f.id === 'playerFace'; });
 
     function heroInView(){
-      var x = lenis ? lenis.scroll : (book ? book.scrollLeft : 0);
-      return x < window.innerWidth * 0.6;
+      return book ? (book.scrollLeft < window.innerWidth * 0.6) : true;
     }
     function off(i){ var o = ((i - idx) % n + n) % n; if (o > n / 2) o -= n; return o; }
     function apply(){
@@ -1902,13 +2029,229 @@ footer a:hover{color:var(--accent);}
     hud();
   })();
 
+  /* ---------- Hero drum face 4: STAR JOURNAL 星图手账 ---------- */
+  (function(){
+    var face = document.getElementById('starsFace');
+    var cv = document.getElementById('starsCanvas');
+    if (!face || !cv) return;
+    var sctx = cv.getContext('2d');
+    var dpr = 1, sw = 0, sh = 0;
+    var running = false, rafId = null;
+
+    function resize(){
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      sw = cv.clientWidth; sh = cv.clientHeight;
+      if (!sw || !sh) return;
+      cv.width = Math.floor(sw * dpr); cv.height = Math.floor(sh * dpr);
+      sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seedField();
+    }
+
+    /* ---- star field state ---- */
+    var field = [];       /* ambient stars */
+    var dropped = [];     /* user-placed stars (the journal) */
+    var ripples = [];
+    var meteors = [];
+    var nextMeteor = performance.now() + 4000 + Math.random() * 5000;
+    var ptr = { x: -9999, y: -9999, on: false };
+    var litCount = 0;
+    var countEl = document.getElementById('starsCount');
+
+    function mkStar(x, y, big){
+      var warm = Math.random() < 0.22;
+      return {
+        x: x, y: y,
+        bx: x, by: y,               /* anchor for spring-back */
+        vx: 0, vy: 0,
+        r: big ? 1.8 + Math.random() * 1.6 : 0.5 + Math.random() * 1.15,
+        p: Math.random() * 6.28,    /* twinkle phase */
+        tw: 0.6 + Math.random() * 1.4,
+        warm: warm,
+        born: performance.now()
+      };
+    }
+    function seedField(){
+      field = [];
+      var n = Math.round((sw * sh) / 6200);
+      for (var i = 0; i < n; i++){
+        field.push(mkStar(Math.random() * sw, Math.random() * sh, Math.random() < 0.06));
+      }
+    }
+
+    function addDrop(x, y){
+      if (dropped.length > 46) dropped.shift();
+      var s = mkStar(x, y, true);
+      s.pinned = true;
+      dropped.push(s);
+      litCount++;
+      ripples.push({ x: x, y: y, r: 2, a: 0.8 });
+      if (countEl) countEl.textContent = '已点亮 ' + litCount + ' 颗 · 点按继续';
+    }
+
+    cv.addEventListener('pointermove', function(e){
+      var r = cv.getBoundingClientRect();
+      ptr.x = e.clientX - r.left; ptr.y = e.clientY - r.top; ptr.on = true;
+    });
+    cv.addEventListener('pointerleave', function(){ ptr.on = false; ptr.x = -9999; ptr.y = -9999; });
+    cv.addEventListener('pointerdown', function(e){
+      var r = cv.getBoundingClientRect();
+      addDrop(e.clientX - r.left, e.clientY - r.top);
+    });
+
+    function allStars(){ return field.concat(dropped); }
+
+    function frame(now){
+      if (!running) return;
+      var i, j, s, t = now * 0.001;
+      sctx.clearRect(0, 0, sw, sh);
+
+      /* deep indigo wash + faint nebula blobs */
+      var bg = sctx.createLinearGradient(0, 0, 0, sh);
+      bg.addColorStop(0, '#101527'); bg.addColorStop(1, '#0B0E1A');
+      sctx.fillStyle = bg; sctx.fillRect(0, 0, sw, sh);
+      sctx.globalAlpha = 0.05;
+      sctx.fillStyle = '#5B6FD6';
+      sctx.beginPath(); sctx.ellipse(sw * 0.22, sh * 0.3, sw * 0.24, sh * 0.3, 0.5, 0, 6.29); sctx.fill();
+      sctx.fillStyle = '#D6895B';
+      sctx.beginPath(); sctx.ellipse(sw * 0.8, sh * 0.72, sw * 0.2, sh * 0.26, -0.4, 0, 6.29); sctx.fill();
+      sctx.globalAlpha = 1;
+
+      var stars = allStars();
+
+      /* drift + pointer gravity */
+      for (i = 0; i < stars.length; i++){
+        s = stars[i];
+        if (!s.pinned){
+          s.bx += Math.sin(t * 0.14 + s.p * 2.1) * 0.05;
+          s.by += Math.cos(t * 0.11 + s.p * 1.7) * 0.04;
+        }
+        var dx = ptr.x - s.x, dy = ptr.y - s.y;
+        var d2 = dx * dx + dy * dy;
+        if (ptr.on && d2 < 16900){ /* within 130px */
+          var d = Math.sqrt(d2) || 1;
+          var f = (1 - d / 130) * 0.55;
+          s.vx += (dx / d) * f; s.vy += (dy / d) * f;
+        }
+        /* spring back to anchor */
+        s.vx += (s.bx - s.x) * 0.012; s.vy += (s.by - s.y) * 0.012;
+        s.vx *= 0.9; s.vy *= 0.9;
+        s.x += s.vx; s.y += s.vy;
+      }
+
+      /* constellation lines: dropped stars weave a permanent web;
+         ambient stars light lines only near the pointer */
+      sctx.lineWidth = 0.6;
+      for (i = 0; i < stars.length; i++){
+        s = stars[i];
+        var energized = s.pinned;
+        if (!energized && ptr.on){
+          var pdx = ptr.x - s.x, pdy = ptr.y - s.y;
+          energized = (pdx * pdx + pdy * pdy) < 11025; /* 105px */
+        }
+        if (!energized) continue;
+        for (j = i + 1; j < stars.length; j++){
+          var o = stars[j];
+          var nearPtr = false;
+          if (!o.pinned && ptr.on){
+            var odx = ptr.x - o.x, ody = ptr.y - o.y;
+            nearPtr = (odx * odx + ody * ody) < 11025;
+          }
+          if (!o.pinned && !nearPtr) continue;
+          var ddx = o.x - s.x, ddy = o.y - s.y;
+          var dd = ddx * ddx + ddy * ddy;
+          if (dd < 4900){ /* 70px */
+            var a = (1 - Math.sqrt(dd) / 70) * 0.34;
+            sctx.strokeStyle = 'rgba(214,222,255,' + a.toFixed(3) + ')';
+            sctx.beginPath(); sctx.moveTo(s.x, s.y); sctx.lineTo(o.x, o.y); sctx.stroke();
+          }
+        }
+      }
+
+      /* stars (soft glow sprite) */
+      for (i = 0; i < stars.length; i++){
+        s = stars[i];
+        var tw = 0.55 + 0.45 * Math.sin(t * s.tw + s.p);
+        var age = Math.min(1, (now - s.born) / 600);
+        var alpha = tw * age;
+        var col = s.warm ? '255,214,160' : (s.pinned ? '255,244,214' : '226,232,255');
+        var R = s.r * (s.pinned ? 3.2 : 2.6);
+        var g = sctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, R);
+        g.addColorStop(0, 'rgba(' + col + ',' + (alpha * 0.9).toFixed(3) + ')');
+        g.addColorStop(0.4, 'rgba(' + col + ',' + (alpha * 0.28).toFixed(3) + ')');
+        g.addColorStop(1, 'rgba(' + col + ',0)');
+        sctx.fillStyle = g;
+        sctx.beginPath(); sctx.arc(s.x, s.y, R, 0, 6.29); sctx.fill();
+        sctx.fillStyle = 'rgba(' + col + ',' + alpha.toFixed(3) + ')';
+        sctx.beginPath(); sctx.arc(s.x, s.y, s.r, 0, 6.29); sctx.fill();
+      }
+
+      /* drop ripples */
+      for (i = ripples.length - 1; i >= 0; i--){
+        var rp = ripples[i];
+        rp.r += 1.6; rp.a *= 0.94;
+        if (rp.a < 0.02){ ripples.splice(i, 1); continue; }
+        sctx.strokeStyle = 'rgba(255,236,200,' + rp.a.toFixed(3) + ')';
+        sctx.lineWidth = 1;
+        sctx.beginPath(); sctx.arc(rp.x, rp.y, rp.r, 0, 6.29); sctx.stroke();
+      }
+
+      /* occasional meteor */
+      if (now > nextMeteor && !document.hidden){
+        nextMeteor = now + 7000 + Math.random() * 9000;
+        var fromLeft = Math.random() < 0.5;
+        meteors.push({
+          x: fromLeft ? -20 : sw + 20,
+          y: Math.random() * sh * 0.4,
+          vx: (fromLeft ? 1 : -1) * (5 + Math.random() * 3),
+          vy: 2 + Math.random() * 1.6,
+          life: 1
+        });
+      }
+      for (i = meteors.length - 1; i >= 0; i--){
+        var m = meteors[i];
+        m.x += m.vx; m.y += m.vy; m.life -= 0.018;
+        if (m.life <= 0 || m.x < -80 || m.x > sw + 80){ meteors.splice(i, 1); continue; }
+        var tail = 14;
+        var mg = sctx.createLinearGradient(m.x, m.y, m.x - m.vx * tail, m.y - m.vy * tail);
+        mg.addColorStop(0, 'rgba(255,250,235,' + (m.life * 0.9).toFixed(3) + ')');
+        mg.addColorStop(1, 'rgba(255,250,235,0)');
+        sctx.strokeStyle = mg; sctx.lineWidth = 1.4;
+        sctx.beginPath(); sctx.moveTo(m.x, m.y); sctx.lineTo(m.x - m.vx * tail, m.y - m.vy * tail); sctx.stroke();
+      }
+
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function setRunning(on){
+      if (on === running) return;
+      running = on;
+      if (on){
+        resize();
+        rafId = requestAnimationFrame(frame);
+      } else if (rafId){
+        cancelAnimationFrame(rafId); rafId = null;
+      }
+    }
+
+    /* only animate while the face is front & hero in view */
+    function check(){
+      var front = face.classList.contains('is-front');
+      var hv = book ? (book.scrollLeft < window.innerWidth * 0.6) : true;
+      setRunning(front && hv && !document.hidden && !REDUCED);
+    }
+    setInterval(check, 600);
+    document.addEventListener('visibilitychange', check);
+    window.addEventListener('resize', function(){ if (running) resize(); });
+    face.addEventListener('transitionend', check);
+    check();
+  })();
+
   var fill = document.getElementById('progressFill');
   var pdot = document.getElementById('progressDot');
   var pgDot = document.getElementById('pgDot');
   function updateProgress(){
-    if (!book || !track || !fill || !pdot) return;
-    var max = track.scrollWidth - book.clientWidth;
-    var p = max > 0 ? Math.min(1, Math.max(0, book.scrollLeft / max)) : 0;
+    if (!book || !fill || !pdot) return;
+    var p = Math.min(1, Math.max(0, s / 4));
     fill.style.transform = 'scaleX(' + p + ')';
     pdot.style.transform = 'translate(' + (p * book.clientWidth) + 'px,-50%)';
     if (pgDot) pgDot.style.left = (p * 100).toFixed(2) + '%';
@@ -2027,9 +2370,12 @@ footer a:hover{color:var(--accent);}
   var pagerLast = 0;
   function updateNavActive(){
     if (!book || !panels || !panels.length) return;
-    var w = Math.max(1, book.clientWidth);
-    var sl = book.scrollLeft;
-    var idx = Math.min(panels.length - 1, Math.max(0, Math.round(sl / w)));
+    var w = Math.max(1, book.clientWidth), h = Math.max(1, book.clientHeight);
+    var sl = book.scrollLeft, st = book.scrollTop;
+    /* 二维书径判页：顶行（首页/作品）按横向，底行（关于/实验场/联系）按横向+竖向阈值 */
+    var idx;
+    if (st < h * 0.5) idx = sl < w * 0.5 ? 0 : 1;
+    else idx = Math.min(4, Math.max(2, 2 + Math.round((sl - w) / w)));
 
     if (idx !== pagerLast){
       pagerLast = idx;
@@ -2049,46 +2395,76 @@ footer a:hover{color:var(--accent);}
   }
   updateNavActive();
 
-  /* ---------- Hero hints：About → 换背景 → 翻页（顺序引导，仅首次访问） ---------- */
+  /* ---------- Hero hints：事件驱动引导链 ----------
+     ① 打开首页 1.2s 后提示 About me → ② 看完关闭弹层后提示切换背景
+     → ③ 切换过背景后提示翻页。任何一步翻离首页即全部退场。 */
   (function(){
-    /* 每次打开页面都重新提醒（不做 once-only 记录） */
     var wrap = document.getElementById('hints');
     if (!wrap) return;
     var aboutEl = wrap.querySelector('.hint--about');
     var bgEl = wrap.querySelector('.hint--bg');
     var swipeEl = wrap.querySelector('.hint--swipe');
-    var done = false;
-    function finish(){
-      if (done) return; done = true;
+    var dead = false, bgTouched = false;
+    var cur = null, hideTimer = null, idleTimer = null;
+
+    function onHero(){ return pagerLast === 0; }
+    function clearTimers(){
+      if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
+      if (idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
     }
-    function play(el, at, hold, isLast){
+    function show(el, autoHideMs){
+      if (dead || !el || cur === el) return;
+      hide(true);
+      cur = el;
+      el.style.display = '';
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){ el.classList.add('show'); });
+      });
+      clearTimers();
+      if (autoHideMs) hideTimer = setTimeout(function(){ hide(); }, autoHideMs);
+    }
+    function hide(instant){
+      if (!cur) return;
+      var el = cur; cur = null;
+      clearTimers();
+      el.classList.add('gone');
       setTimeout(function(){
-        var overlayOpen = document.getElementById('aboutOverlay') && document.getElementById('aboutOverlay').classList.contains('on');
-        if (pagerLast !== 0 || overlayOpen){ wrap.style.display = 'none'; finish(); return; }
-        el.classList.add('show');
-        setTimeout(function(){ el.classList.add('gone'); }, hold);
-        setTimeout(function(){
-          el.classList.remove('show','gone'); el.style.display = 'none';
-          if (isLast) finish();
-        }, hold + 900);
-      }, at);
+        if (cur === el) return; /* 期间被重新 show，保留新状态 */
+        el.classList.remove('show', 'gone');
+        el.style.display = 'none';
+      }, instant ? 0 : 650);
     }
-    play(aboutEl, 1200, 3400, false);
-    play(bgEl,    5000, 3400, false);
-    play(swipeEl, 8800, 6500, true);
-    setTimeout(finish, 18000);
-    /* 翻离首页或打开 About 弹层时立即清场 */
+    function kill(){
+      if (dead) return;
+      dead = true;
+      hide(true);
+      wrap.style.display = 'none';
+    }
+
+    /* ① 首屏入场后提示 About me；长按不点则 9s 后自动收起 */
+    setTimeout(function(){ show(aboutEl, 9000); }, 1200);
+    /* 打开弹层：撤掉 About 提示 */
+    window.addEventListener('aboutopen', function(){ hide(); });
+    /* ② 关闭弹层：引导切换背景 */
+    window.addEventListener('aboutclose', function(){
+      setTimeout(function(){
+        if (dead) return;
+        if (bgTouched) show(swipeEl, 8000);   /* 背景已切过 → 直接提示翻页 */
+        else show(bgEl, 0);                    /* 一直陪伴到用户切换背景 */
+      }, 700);
+    });
+    /* ③ 切换背景后：撤掉背景提示，引导翻页 */
+    window.addEventListener('bgchange', function(){
+      bgTouched = true;
+      if (dead || !onHero()) return;
+      hide();
+      show(swipeEl, 8000);
+    });
+    /* 翻离首页 → 全部退场 */
     var guard = setInterval(function(){
-      var overlayOpen = document.getElementById('aboutOverlay') && document.getElementById('aboutOverlay').classList.contains('on');
-      if (pagerLast !== 0 || overlayOpen){
-        [aboutEl, bgEl, swipeEl].forEach(function(el){
-          el.classList.remove('show'); el.classList.add('gone');
-          setTimeout(function(){ el.style.display = 'none'; }, 700);
-        });
-        clearInterval(guard);
-      }
+      if (pagerLast !== 0){ kill(); clearInterval(guard); }
     }, 400);
-    setTimeout(function(){ clearInterval(guard); }, 20000);
+    setTimeout(function(){ clearInterval(guard); }, 90000);
   })();
 
   /* ---------- Scroll-linked edge particles ----------
@@ -2166,7 +2542,7 @@ footer a:hover{color:var(--accent);}
         sz = new Float32Array(MAX), seed = new Float32Array(MAX),
         life = new Float32Array(MAX), maxLife = new Float32Array(MAX);
     var mode = new Uint8Array(MAX), col = new Uint8Array(MAX);
-    var spawnCursor = 0, lastSl = 0, halt = false;
+    var spawnCursor = 0, lastSl = 0, lastSt = 0, halt = false;
 
     /* soft-glow dot sprites: cream / green / print-pink */
     function makeSprite(r, g, b){
@@ -2196,17 +2572,17 @@ footer a:hover{color:var(--accent);}
     buildSprites();
     window.addEventListener('bgchange', buildSprites);
 
-    /* per-page glyph points cached in track space: x + scrollLeft at sample time */
+    /* per-page glyph points cached in track space: + scrollLeft/+ scrollTop at sample time */
     function getTrackPoints(idx){
       if (ptCache[idx]) return ptCache[idx];
       var page = panels[idx];
       if (!page){ return null; }
       var pts = samplePagePoints(page, true);
       var arr = new Float32Array(pts.length);
-      var sl0 = book.scrollLeft;
+      var sl0 = book.scrollLeft, st0 = book.scrollTop;
       for (var i = 0; i < pts.length; i += 2){
         arr[i] = pts[i] + sl0;
-        arr[i + 1] = pts[i + 1];
+        arr[i + 1] = pts[i + 1] + st0;
       }
       ptCache[idx] = arr;
       return arr;
@@ -2216,7 +2592,7 @@ footer a:hover{color:var(--accent);}
       var r = Math.random();
       return r < 0.74 ? 0 : (r < 0.92 ? 1 : 2);
     }
-    function spawn(x, y, m, dir, speed){
+    function spawn(x, y, m, dir, speed, axis){
       for (var k = 0; k < MAX; k++){
         var i = (spawnCursor + k) % MAX;
         if (life[i] > 0) continue;
@@ -2227,13 +2603,23 @@ footer a:hover{color:var(--accent);}
         seed[i] = Math.random() * 6.28;
         if (m === 0){ /* dissolve: ink peeling off the leaving glyphs */
           px[i] = ppx[i] = x; py[i] = ppy[i] = y;
-          vx[i] = -dir * (1.3 + speed * 0.28 + Math.random() * 2.4);
-          vy[i] = (Math.random() - 0.5) * 1.4;
+          if (axis === 'y'){ /* 竖向翻阅：向上滚出的页从上缘消散 */
+            vy[i] = -dir * (1.3 + speed * 0.28 + Math.random() * 2.4);
+            vx[i] = (Math.random() - 0.5) * 1.4;
+          } else {
+            vx[i] = -dir * (1.3 + speed * 0.28 + Math.random() * 2.4);
+            vy[i] = (Math.random() - 0.5) * 1.4;
+          }
           life[i] = maxLife[i] = 30 + (Math.random() * 22 | 0);
         } else { /* assemble: swoop in along a curve, spring onto the glyph */
           hx[i] = x; hy[i] = y;
-          px[i] = ppx[i] = x + dir * (90 + Math.random() * 270);
-          py[i] = ppy[i] = y + (Math.random() - 0.5) * 120;
+          if (axis === 'y'){
+            px[i] = ppx[i] = x + (Math.random() - 0.5) * 120;
+            py[i] = ppy[i] = y + dir * (90 + Math.random() * 270);
+          } else {
+            px[i] = ppx[i] = x + dir * (90 + Math.random() * 270);
+            py[i] = ppy[i] = y + (Math.random() - 0.5) * 120;
+          }
           vx[i] = 0; vy[i] = 0;
           life[i] = maxLife[i] = 62 + (Math.random() * 26 | 0);
         }
@@ -2242,41 +2628,58 @@ footer a:hover{color:var(--accent);}
       return false;
     }
 
-    function spawnEdge(idx, m, dir, speed, budget){
+    function spawnEdge(idx, m, dir, speed, budget, axis){
       var pts = getTrackPoints(idx);
       if (!pts || !pts.length) return budget;
-      var sl = book.scrollLeft, W = window.innerWidth;
+      var sl = book.scrollLeft, st = book.scrollTop;
+      var W = window.innerWidth, H = window.innerHeight;
       for (var i = 0; i < pts.length && budget > 0; i += 2){
         if (Math.random() > 0.35) continue;
-        var sx = pts[i] - sl, sy = pts[i + 1];
+        var sx = pts[i] - sl, sy = pts[i + 1] - st;
         var inBand;
-        if (m === 0){ /* leaving edge */
-          inBand = dir > 0 ? (sx > -140 && sx < 50) : (sx > W - 50 && sx < W + 140);
-        } else { /* arriving edge */
-          inBand = dir > 0 ? (sx > W - 170 && sx < W + 90) : (sx > -90 && sx < 170);
+        if (axis === 'y'){
+          if (m === 0){ /* 竖向离开边：dir>0 页从上缘出去，dir<0 页从下缘出去 */
+            inBand = dir > 0 ? (sy > -140 && sy < 50) : (sy > H - 50 && sy < H + 140);
+          } else { /* 竖向进入边 */
+            inBand = dir > 0 ? (sy > H - 170 && sy < H + 90) : (sy > -90 && sy < 170);
+          }
+        } else {
+          if (m === 0){ /* leaving edge */
+            inBand = dir > 0 ? (sx > -140 && sx < 50) : (sx > W - 50 && sx < W + 140);
+          } else { /* arriving edge */
+            inBand = dir > 0 ? (sx > W - 170 && sx < W + 90) : (sx > -90 && sx < 170);
+          }
         }
         if (!inBand) continue;
-        if (spawn(sx, sy, m, dir, speed)) budget--;
+        if (spawn(sx, sy, m, dir, speed, axis)) budget--;
       }
       return budget;
     }
 
     function loop(){
-      if (halt){ lastSl = book.scrollLeft; requestAnimationFrame(loop); return; }
+      if (halt){ lastSl = book.scrollLeft; lastSt = book.scrollTop; requestAnimationFrame(loop); return; }
       var W = window.innerWidth, H = window.innerHeight;
-      var sl = book.scrollLeft;
-      var v = lenis ? (lenis.velocity || 0) : (sl - lastSl);
-      lastSl = sl;
+      var sl = book.scrollLeft, st = book.scrollTop;
+      var vx_ = sl - lastSl, vy_ = st - lastSt;
+      lastSl = sl; lastSt = st;
+      var axis = Math.abs(vy_) > Math.abs(vx_) ? 'y' : 'x';
+      var v = axis === 'y' ? vy_ : vx_;
       var speed = Math.abs(v);
 
       if (speed > 0.45){
         var dir = v > 0 ? 1 : -1;
-        var base = Math.max(0, Math.floor(sl / W));
-        var outIdx = dir > 0 ? base : base + 1;
-        var inIdx = dir > 0 ? base + 1 : base;
+        var base, outIdx, inIdx;
+        if (axis === 'y'){ /* 竖向段：work(1) ↔ about(2) */
+          outIdx = dir > 0 ? 1 : 2;
+          inIdx  = dir > 0 ? 2 : 1;
+        } else { /* 横向段：顶行 0↔1，底行 2↔3↔4 */
+          base = st < H * 0.5 ? Math.min(1, Math.floor(sl / W)) : Math.min(3, 2 + Math.floor((sl - W) / W));
+          outIdx = dir > 0 ? base : base + 1;
+          inIdx  = dir > 0 ? base + 1 : base;
+        }
         var budget = Math.min(34, 5 + (speed * 1.1 | 0));
-        budget = spawnEdge(outIdx, 0, dir, speed, budget);
-        spawnEdge(inIdx, 1, dir, speed, budget);
+        budget = spawnEdge(outIdx, 0, dir, speed, budget, axis);
+        spawnEdge(inIdx, 1, dir, speed, budget, axis);
       }
 
       var time = performance.now() * 0.001;
@@ -2383,13 +2786,13 @@ footer a:hover{color:var(--accent);}
     function closeOverlay(){
       if (!aboutOverlay || !aboutOverlay.classList.contains('on')) return;
       aboutOverlay.classList.remove('on');
-      if (lenis) lenis.start();
+      window.dispatchEvent(new Event('aboutclose'));
     }
     if (aboutCorner && aboutOverlay){
       aboutCorner.addEventListener('click', function(){
         if (aboutOverlay.classList.contains('on')) return;
         aboutOverlay.classList.add('on');
-        if (lenis) lenis.stop();
+        window.dispatchEvent(new Event('aboutopen'));
         /* sample glyph positions BEFORE gsap slides them in */
         var toPts = samplePagePoints(aboutOverlay, true);
         var fromPts = samplePagePoints(document.getElementById('hero'), true);
@@ -2712,10 +3115,10 @@ footer a:hover{color:var(--accent);}
     function setKnob(x){
       knob.style.transform = 'translate(calc(-50% + ' + x + 'px), -50%)';
     }
-    function apply(i){
+    function apply(i, silent){
       cur = i + 1;
       document.documentElement.setAttribute('data-bg', cur);
-      window.dispatchEvent(new Event('bgchange'));
+      if (!silent) window.dispatchEvent(new Event('bgchange'));
       rail.setAttribute('aria-valuenow', cur);
       idxEl.textContent = '0' + cur;
       var stops = track.querySelectorAll('.bg-stop');
@@ -2767,7 +3170,7 @@ footer a:hover{color:var(--accent);}
       })(si);
     }
     window.addEventListener('resize', function(){ setKnob(stopX(cur - 1)); });
-    apply(0);
+    apply(0, true); /* 初始化静默应用，不触发 bgchange 引导事件 */
   })();
 })();
 </script>
