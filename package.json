@@ -1,0 +1,9 @@
+{
+  "name": "xiao-yuanqi-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "XIAO YUANQI — Creative Developer & Designer 个人作品集",
+  "scripts": {
+    "dev": "node server.js"
+  }
+}
