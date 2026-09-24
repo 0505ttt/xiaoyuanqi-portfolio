@@ -53,6 +53,8 @@ html[data-bg="5"]{
 body{transition:background-color 0.9s var(--ease),color 0.9s var(--ease);}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:auto;}
+html.lenis,html.lenis body{height:auto;}
+.lenis.lenis-smooth{scroll-behavior:auto!important;}
 body{
   background:var(--bg);
   color:var(--fg);
@@ -323,26 +325,25 @@ html.reduced .reveal{opacity:1;transform:none;}
 }
 .section-title em{font-style:italic;}
 
-/* ============ BOOK LAYOUT（横-竖-横 混合路径书轨） ============
-   首页→作品：横向；作品→关于：竖向（拐角在作品正下方）；其后恢复横向 */
-.book{height:100svh;overflow:auto;overscroll-behavior:none;scrollbar-width:none;}
+/* ============ BOOK LAYOUT (horizontal pages) ============ */
+.book{height:100svh;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
 .book::-webkit-scrollbar{display:none;}
-.book-track{display:block;position:relative;width:400vw;height:200svh;}
+.book-track{display:flex;align-items:stretch;height:100%;position:relative;}
 .page{
-  width:100vw;height:100svh;position:absolute;left:0;top:0;
+  flex:0 0 100vw;height:100svh;position:relative;
   overflow-y:auto;overflow-x:hidden;scrollbar-width:none;
 }
 .page::-webkit-scrollbar{display:none;}
-#hero{left:0;top:0;}
-#work{left:100vw;top:0;}
-#about{left:100vw;top:100svh;}
-#lab{left:200vw;top:100svh;}
-#contact{left:300vw;top:100svh;}
 section.page{padding:clamp(4rem,10vh,7rem) var(--pad);}
 .book-track > section.hero{padding:0 var(--pad) calc(var(--pad) + 1rem);}
 @media (max-width:767px){
   /* 首页大标题让出固定导航，避免与左上角 logo 重叠 */
   .book-track > section.hero{padding-top:4.7rem;}
+}
+/* stacked-page spine: hairline + soft shadow on the left edge of every page after the first */
+.book-track > .page + .page::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:1px;
+  background:var(--line);z-index:6;pointer-events:none;
 }
 /* page unfold: content slides in as the page is turned */
 .page-inner{min-height:100%;transition:transform 0.9s var(--ease),opacity 0.9s var(--ease);}
@@ -776,59 +777,6 @@ footer a:hover{color:var(--accent);}
 .ov-mail{font-family:var(--serif);font-size:clamp(1.3rem,2.6vw,2rem);color:#f6f1e7;}
 .ov-social{display:flex;gap:1.6rem;}
 
-/* ============ HERO HINTS（首页引导气泡：About → 背景 → 翻页，仅首次访问） ============ */
-.hints{position:fixed;inset:0;z-index:2600;pointer-events:none;}
-.hint{
-  position:absolute;left:50%;top:42%;
-  transform:translate(-50%,14px) scale(0.82);transform-origin:center;
-  display:flex;align-items:center;gap:0.55em;
-  padding:0.72em 1.35em;border-radius:999px;
-  font-family:var(--mono);font-size:0.75rem;letter-spacing:0.14em;
-  color:rgba(33,44,62,0.88);white-space:nowrap;
-  background:rgba(252,253,255,0.52);
-  -webkit-backdrop-filter:blur(22px) saturate(1.7);
-  backdrop-filter:blur(22px) saturate(1.7);
-  border:1px solid rgba(255,255,255,0.65);
-  box-shadow:0 10px 34px rgba(28,42,66,0.16),inset 0 1px 0 rgba(255,255,255,0.75);
-  opacity:0;filter:blur(6px);
-  transition:opacity 0.7s cubic-bezier(0.22,1,0.36,1),
-             transform 0.7s cubic-bezier(0.22,1,0.36,1),
-             filter 0.7s cubic-bezier(0.22,1,0.36,1);
-  will-change:transform,opacity,filter;
-}
-.hint.show{opacity:1;filter:blur(0);transform:translate(-50%,0) scale(1);
-  animation:hintFloat 2.8s ease-in-out 0.75s infinite;}
-.hint.gone{opacity:0;filter:blur(6px);transform:translate(-50%,10px) scale(0.88);}
-@keyframes hintFloat{0%,100%{transform:translate(-50%,0) scale(1);}50%{transform:translate(-50%,-5px) scale(1);}}
-/* 玻璃圆泡外的小弯箭头：手绘曲线 + 自动对齐的箭头，指向目标元素 */
-.hint-arrow{
-  position:absolute;overflow:visible;pointer-events:none;
-  opacity:0;transition:opacity 0.6s cubic-bezier(0.22,1,0.36,1) 0.25s;
-}
-.hint.show .hint-arrow{opacity:1;}
-.hint-arrow--about{right:2.5rem;top:calc(100% - 3px);width:2.5rem;height:3.4rem;}
-.hint-arrow--bg{left:50%;top:calc(100% - 3px);width:1.7rem;height:3.1rem;transform:translateX(-50%);}
-.hint.show .hint-arrow path{animation:arrowBob 2.2s ease-in-out 0.9s infinite;}
-@keyframes arrowBob{0%,100%{transform:translateY(0);}50%{transform:translateY(3.5px);}}
-/* ① About me：贴着右下角徽章上方，箭头弯向它 */
-.hint--about{left:auto;right:2.2rem;top:auto;bottom:12.6rem;transform-origin:80% 100%;}
-.hint--about.show{animation-name:hintFloatAbout;}
-.hint--about.gone{transform:translateY(10px) scale(0.88);}
-@keyframes hintFloatAbout{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(0,-4px) scale(1);}}
-.hint--about.show{animation:hintNudge 2s cubic-bezier(0.34,1.3,0.64,1) 0.7s infinite;}
-@keyframes hintNudge{0%,100%{transform:translate(0,0) scale(1);}14%{transform:translate(0,0) scale(0.94);}30%{transform:translate(0,0) scale(1.03);}44%{transform:translate(0,0) scale(1);}}
-/* ② 切换背景：贴着切换栏上方，箭头垂直指向它 */
-.hint--bg{top:auto;bottom:7.6rem;}
-.hint--bg.show{animation:hintRock 2.4s ease-in-out 0.7s infinite;}
-@keyframes hintRock{0%,100%{transform:translate(-50%,0) scale(1);}30%{transform:translate(calc(-50% - 7px),0) scale(1);}70%{transform:translate(calc(-50% + 7px),0) scale(1);}}
-/* ③ 翻页：居中偏上，更大更醒目，强调是“翻整页” */
-.hint--swipe{top:40%;flex-direction:column;gap:0.35em;padding:1em 2.1em;text-align:center;}
-.hint--swipe.show{animation:hintPulse 2.2s ease-in-out 0.75s infinite;}
-.hint--swipe .h-main{animation:hintDrift 2.2s ease-in-out infinite;}
-@keyframes hintDrift{0%,100%{transform:translateX(0);}50%{transform:translateX(-6px);}}
-@keyframes hintPulse{0%,100%{transform:translate(-50%,0) scale(1);box-shadow:0 10px 34px rgba(28,42,66,0.16);}50%{transform:translate(-50%,0) scale(1.045);box-shadow:0 14px 44px rgba(28,42,66,0.24);}}
-.hint--swipe .h-main{display:block;font-size:0.88rem;letter-spacing:0.16em;}
-.hint--swipe .h-sub{display:block;font-size:0.62rem;letter-spacing:0.22em;color:rgba(33,44,62,0.55);margin-top:0.3em;}
 
 /* ============ REDUCED MOTION ============ */
 @media (prefers-reduced-motion:reduce){
@@ -976,25 +924,6 @@ footer a:hover{color:var(--accent);}
 </div>
 
 <!-- Pager -->
-<div class="hints" id="hints" aria-hidden="true">
-  <div class="hint hint--about">点这里 · About me
-    <svg class="hint-arrow hint-arrow--about" viewBox="0 0 40 54" aria-hidden="true">
-      <defs><marker id="ha-about" markerWidth="7" markerHeight="7" refX="5.2" refY="3.5" orient="auto">
-        <path d="M0,0 L7,3.5 L0,7 Z" fill="rgba(33,44,62,0.62)"/>
-      </marker></defs>
-      <path d="M7 3 C 24 10, 32 25, 31 45" fill="none" stroke="rgba(33,44,62,0.6)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#ha-about)"/>
-    </svg>
-  </div>
-  <div class="hint hint--bg">点按或拖动这里 · 切换背景
-    <svg class="hint-arrow hint-arrow--bg" viewBox="0 0 26 48" aria-hidden="true">
-      <defs><marker id="ha-bg" markerWidth="7" markerHeight="7" refX="5.2" refY="3.5" orient="auto">
-        <path d="M0,0 L7,3.5 L0,7 Z" fill="rgba(33,44,62,0.62)"/>
-      </marker></defs>
-      <path d="M13 2 C 13 18, 12 31, 9 42" fill="none" stroke="rgba(33,44,62,0.6)" stroke-width="2.4" stroke-linecap="round" marker-end="url(#ha-bg)"/>
-    </svg>
-  </div>
-  <div class="hint hint--swipe"><span class="h-main">向下滑动或向左滑动 · 翻开下一页</span><span class="h-sub">手机下滑 · 电脑滚轮或 ← → 键</span></div>
-</div>
 </div>
 <div class="pager" id="pager" aria-hidden="true">
   <div class="pg-row">
@@ -1405,6 +1334,7 @@ footer a:hover{color:var(--accent);}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
 <script>
 (function(){
   'use strict';
@@ -1430,178 +1360,93 @@ footer a:hover{color:var(--accent);}
   }
   tick(); setInterval(tick, 1000);
 
-  /* ---------- 书轨控制器：s 虚拟坐标沿「横-竖-横」路径投影到二维滚动 ----------
-     s ∈ [0,4]：0 首页 → 1 作品（横向）→ 2 关于（竖向拐角）→ 3 实验场 → 4 联系（横向） */
+  /* ---------- Lenis smooth scroll: horizontal book ---------- */
   var book = document.getElementById('book');
-  var sv = 0, s = 0;          /* 目标 / 当前 虚拟路径坐标 */
-
-  function sToXY(v){
-    var w = book.clientWidth, h = book.clientHeight;
-    if (v < 1) return [v * w, 0];
-    if (v < 2) return [w, (v - 1) * h];
-    return [(v - 1) * w, h];
-  }
-  function xyToS(x, y){
-    var w = Math.max(1, book.clientWidth), h = Math.max(1, book.clientHeight);
-    if (y < h * 0.5) return Math.max(0, Math.min(1, x / w));
-    return Math.max(2, Math.min(4, 1 + y / h + (x - w) / w));
-  }
-  function clampS(){ sv = Math.max(0, Math.min(4, sv)); }
-  function overlayOpen(){
-    var o = document.getElementById('aboutOverlay');
-    return !!(o && o.classList.contains('on'));
-  }
-  function applyS(){
-    var p = sToXY(s);
-    if (p[0] !== book.scrollLeft) book.scrollLeft = p[0];
-    if (p[1] !== book.scrollTop) book.scrollTop = p[1];
-  }
+  var track = document.getElementById('bookTrack');
+  var lenis = null;
 
   /* vertical handoff: a page that overflows vertically (expanded WORK rows,
      tall lists) consumes the wheel up/down; only at its ends does the wheel
-     fall through to the book controller and flip the page along the path */
-  /* down=true 表示内容向页面底部滚动；返回 true 表示内层页已消费该手势 */
-  function innerConsumes(e, down, mag){
-    var pg = e.target && e.target.closest && e.target.closest('.page');
-    if (!pg || pg.scrollHeight <= pg.clientHeight + 2) return false;
-    var st = pg.scrollTop;
-    var atTop = st <= 1;
-    var atBottom = st + pg.clientHeight >= pg.scrollHeight - 1;
-    if ((down && !atBottom) || (!down && !atTop)){
-      e.preventDefault();
-      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-      pg.scrollTop = st + (down ? mag : -mag);
-      return true;
-    }
-    return false;
-  }
-  if (book){
+     fall through to Lenis and flip the book sideways */
+  if (!REDUCED){
     book.addEventListener('wheel', function(e){
-      if (Math.abs(e.deltaY) < 0.5 && Math.abs(e.deltaX) < 0.5) return;
-      var vDom = Math.abs(e.deltaY) >= Math.abs(e.deltaX);
-      var d = vDom ? e.deltaY : e.deltaX;
-      if (vDom && innerConsumes(e, d > 0, Math.abs(d))) return;
-      e.preventDefault();
-      if (overlayOpen()) return;
-      lastInput = performance.now();
-      sv += d / (book.clientHeight * 1.15);
-      clampS();
-    }, { capture:true, passive:false });
-
-    /* 触屏：竖向手势异步驱动书轨沿路径翻页（上滑 = 往后一页，下滑 = 往回一页；
-       一次滑动手势最多翻一页） */
-    var tLastY = 0, tLastX = 0, tActive = false, tAcc = 0, tAccX = 0, tFired = false;
-    book.addEventListener('touchstart', function(e){
-      tActive = true; tAcc = 0; tAccX = 0; tFired = false;
-      tLastY = e.touches[0].clientY; tLastX = e.touches[0].clientX;
-    }, { capture:true, passive:true });
-    book.addEventListener('touchend', function(){
-      tActive = false;
-      sv = xyToS(book.scrollLeft, book.scrollTop);
-    }, { capture:true, passive:true });
-    book.addEventListener('touchmove', function(e){
-      if (REDUCED || !tActive) return;
-      var dy = tLastY - e.touches[0].clientY; /* >0 手指上滑 = 向前翻 */
-      var dx = tLastX - e.touches[0].clientX; /* >0 手指左滑 = 向前翻 */
-      tLastY = e.touches[0].clientY; tLastX = e.touches[0].clientX;
-      if (Math.abs(dy) >= Math.abs(dx)){
-        if (Math.abs(dy) < 0.5) return;
-        if (innerConsumes(e, dy > 0, Math.abs(dy))) return;
+      if (Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+      var pg = e.target && e.target.closest && e.target.closest('.page');
+      if (!pg || pg.scrollHeight <= pg.clientHeight + 2) return;
+      var st = pg.scrollTop, down = e.deltaY > 0;
+      var atTop = st <= 1;
+      var atBottom = st + pg.clientHeight >= pg.scrollHeight - 1;
+      if ((down && !atBottom) || (!down && !atTop)){
         e.preventDefault();
-        if (overlayOpen() || tFired) return;
-        lastInput = performance.now();
-        tAcc += dy; tAccX = 0;
-        if (Math.abs(tAcc) > 56){
-          sv = Math.round(xyToS(book.scrollLeft, book.scrollTop)) + (tAcc > 0 ? 1 : -1);
-          tFired = true; tAcc = 0;
-          clampS();
-        }
-      } else {
-        if (Math.abs(dx) < 0.5) return;
-        e.preventDefault();
-        if (overlayOpen() || tFired) return;
-        lastInput = performance.now();
-        tAccX += dx; tAcc = 0;
-        if (Math.abs(tAccX) > 56){
-          sv = Math.round(xyToS(book.scrollLeft, book.scrollTop)) + (tAccX > 0 ? 1 : -1);
-          tFired = true; tAccX = 0;
-          clampS();
-        }
+        e.stopImmediatePropagation();
+        pg.scrollTop = st + e.deltaY;
       }
     }, { capture:true, passive:false });
-
-    /* 键盘 ← → 翻页（首页让给小猫/转盘，About 弹层打开时锁定） */
-    document.addEventListener('keydown', function(e){
-      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-      if (overlayOpen()) return;
-      var w = book.clientWidth, h = book.clientHeight;
-      if (book.scrollTop < h * 0.5 && book.scrollLeft < w * 0.6) return; /* hero：交给转盘 */
-      var dir = e.key === 'ArrowRight' ? 1 : -1;
-      e.preventDefault();
-      lastInput = performance.now();
-      if (REDUCED){
-        var p0 = sToXY(Math.max(0, Math.min(4, Math.round(sv) + dir)));
-        book.scrollTo({ left: p0[0], top: p0[1] });
-        sv = xyToS(book.scrollLeft, book.scrollTop);
-      } else {
-        sv = Math.round(sv) + dir; clampS();
-      }
+  }
+  if (!REDUCED && typeof window.Lenis !== 'undefined' && hasGsap){
+    lenis = new Lenis({
+      wrapper: book,
+      content: track,
+      orientation: 'horizontal',
+      duration: 1.2,
+      smoothWheel: true
     });
+    lenis.on('scroll', function(){ updateProgress(); updateNavActive(); });
+    gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+    gsap.ticker.lagSmoothing(0);
 
-    /* rAF：s 向 sv 平滑收敛（REDUCED 时立即跳转，不播放平滑动画；
-       仅 REDUCED 触屏原生滚动期间暂停驱动，避免与手指争抢；
-       滚轮/手势静止 380ms 后吸附到最近页格，让书停在整页上） */
-    var lastInput = performance.now();
-    function rafBook(){
-      if (!(REDUCED && tActive)){
-        if (!REDUCED && !tActive && performance.now() - lastInput > 380){
-          var r0 = Math.round(sv);
-          if (Math.abs(sv - r0) > 0.001){
-            sv += (r0 - sv) * 0.08;
-            if (Math.abs(sv - r0) < 0.001) sv = r0;
-          }
+    /* velocity skew: lists lean with horizontal travel, springy recovery */
+    var skewEls = gsap.utils.toArray('.work-list, .lab-list');
+    var skewCur = 0, skewApplied = false;
+    gsap.ticker.add(function(){
+      var v = lenis.velocity || 0;
+      var target = Math.max(-2, Math.min(2, v * 0.09));
+      skewCur += (target - skewCur) * 0.14;
+      if (Math.abs(skewCur) < 0.005){
+        if (skewApplied){
+          skewEls.forEach(function(el){ el.style.transform = ''; });
+          skewApplied = false;
+          skewCur = 0;
         }
-        if (REDUCED){
-          if (Math.abs(sv - s) > 0.0001){ s = sv; applyS(); }
-        } else {
-          var ns = s + (sv - s) * 0.115;
-          if (Math.abs(sv - ns) < 0.0006) ns = sv;
-          if (ns !== s){ s = ns; applyS(); }
-        }
+        return;
       }
-      requestAnimationFrame(rafBook);
-    }
-    s = sv = xyToS(book.scrollLeft, book.scrollTop);
-    requestAnimationFrame(rafBook);
-
-    book.addEventListener('scroll', function(){ updateProgress(); updateNavActive(); }, { passive:true });
-    window.addEventListener('resize', function(){
-      sv = xyToS(book.scrollLeft, book.scrollTop); s = sv;
-      updateProgress();
+      var s = 'skewX(' + skewCur.toFixed(3) + 'deg)';
+      skewEls.forEach(function(el){ el.style.transform = s; });
+      skewApplied = true;
     });
+  } else if (book){
+    book.addEventListener('scroll', function(){ updateProgress(); updateNavActive(); }, { passive: true });
   }
   updateProgress();
 
-  /* ---------- Anchor scrolling（沿书径跳转到对应页格） ---------- */
-  var PATH_S = { hero:0, work:1, about:2, lab:3, contact:4 };
-  function goToCell(i){
-    i = Math.max(0, Math.min(4, i));
-    lastInput = performance.now();
-    if (REDUCED){
-      var p0 = sToXY(i);
-      book.scrollTo({ left: p0[0], top: p0[1] });
-      sv = xyToS(book.scrollLeft, book.scrollTop);
-    } else {
-      sv = i; clampS();
-    }
-  }
+  /* ---------- 键盘 ← → 翻页（首页让给小猫/转盘，About 弹层打开时锁定） ---------- */
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var ov = document.getElementById('aboutOverlay');
+    if (ov && ov.classList.contains('on')) return;
+    if (!book || !track) return;
+    var w = Math.max(1, book.clientWidth);
+    if (book.scrollLeft < w * 0.6) return; /* hero：交给转盘 */
+    var dir = e.key === 'ArrowRight' ? 1 : -1;
+    var max = Math.max(0, track.scrollWidth - w);
+    var targetX = Math.max(0, Math.min(max, (Math.round(book.scrollLeft / w) + dir) * w));
+    e.preventDefault();
+    if (lenis) lenis.scrollTo(targetX, { duration: 1.0 });
+    else book.scrollTo({ left: targetX, behavior: REDUCED ? 'auto' : 'smooth' });
+  });
+
+  /* ---------- Anchor scrolling ---------- */
   document.querySelectorAll('[data-scroll]').forEach(function(a){
     a.addEventListener('click', function(e){
       var id = a.getAttribute('href');
-      var key = id === '#top' ? 'hero' : id.slice(1);
-      if (!(key in PATH_S)) return;
+      var target = id === '#top' ? document.body : document.querySelector(id);
+      if (!target) return;
       e.preventDefault();
-      goToCell(PATH_S[key]);
+      if (lenis){
+        lenis.scrollTo(id === '#top' ? 0 : target.offsetLeft, { duration: 1.4 });
+      } else {
+        book.scrollTo({ left: id === '#top' ? 0 : target.offsetLeft, behavior: REDUCED ? 'auto' : 'smooth' });
+      }
     });
   });
 
@@ -2250,8 +2095,9 @@ footer a:hover{color:var(--accent);}
   var pdot = document.getElementById('progressDot');
   var pgDot = document.getElementById('pgDot');
   function updateProgress(){
-    if (!book || !fill || !pdot) return;
-    var p = Math.min(1, Math.max(0, s / 4));
+    if (!book || !track || !fill || !pdot) return;
+    var max = track.scrollWidth - book.clientWidth;
+    var p = max > 0 ? Math.min(1, Math.max(0, book.scrollLeft / max)) : 0;
     fill.style.transform = 'scaleX(' + p + ')';
     pdot.style.transform = 'translate(' + (p * book.clientWidth) + 'px,-50%)';
     if (pgDot) pgDot.style.left = (p * 100).toFixed(2) + '%';
@@ -2370,12 +2216,9 @@ footer a:hover{color:var(--accent);}
   var pagerLast = 0;
   function updateNavActive(){
     if (!book || !panels || !panels.length) return;
-    var w = Math.max(1, book.clientWidth), h = Math.max(1, book.clientHeight);
-    var sl = book.scrollLeft, st = book.scrollTop;
-    /* 二维书径判页：顶行（首页/作品）按横向，底行（关于/实验场/联系）按横向+竖向阈值 */
-    var idx;
-    if (st < h * 0.5) idx = sl < w * 0.5 ? 0 : 1;
-    else idx = Math.min(4, Math.max(2, 2 + Math.round((sl - w) / w)));
+    var w = Math.max(1, book.clientWidth);
+    var sl = book.scrollLeft;
+    var idx = Math.min(panels.length - 1, Math.max(0, Math.round(sl / w)));
 
     if (idx !== pagerLast){
       pagerLast = idx;
@@ -2394,78 +2237,6 @@ footer a:hover{color:var(--accent);}
     }
   }
   updateNavActive();
-
-  /* ---------- Hero hints：事件驱动引导链 ----------
-     ① 打开首页 1.2s 后提示 About me → ② 看完关闭弹层后提示切换背景
-     → ③ 切换过背景后提示翻页。任何一步翻离首页即全部退场。 */
-  (function(){
-    var wrap = document.getElementById('hints');
-    if (!wrap) return;
-    var aboutEl = wrap.querySelector('.hint--about');
-    var bgEl = wrap.querySelector('.hint--bg');
-    var swipeEl = wrap.querySelector('.hint--swipe');
-    var dead = false, bgTouched = false;
-    var cur = null, hideTimer = null, idleTimer = null;
-
-    function onHero(){ return pagerLast === 0; }
-    function clearTimers(){
-      if (hideTimer){ clearTimeout(hideTimer); hideTimer = null; }
-      if (idleTimer){ clearTimeout(idleTimer); idleTimer = null; }
-    }
-    function show(el, autoHideMs){
-      if (dead || !el || cur === el) return;
-      hide(true);
-      cur = el;
-      el.style.display = '';
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){ el.classList.add('show'); });
-      });
-      clearTimers();
-      if (autoHideMs) hideTimer = setTimeout(function(){ hide(); }, autoHideMs);
-    }
-    function hide(instant){
-      if (!cur) return;
-      var el = cur; cur = null;
-      clearTimers();
-      el.classList.add('gone');
-      setTimeout(function(){
-        if (cur === el) return; /* 期间被重新 show，保留新状态 */
-        el.classList.remove('show', 'gone');
-        el.style.display = 'none';
-      }, instant ? 0 : 650);
-    }
-    function kill(){
-      if (dead) return;
-      dead = true;
-      hide(true);
-      wrap.style.display = 'none';
-    }
-
-    /* ① 首屏入场后提示 About me；长按不点则 9s 后自动收起 */
-    setTimeout(function(){ show(aboutEl, 9000); }, 1200);
-    /* 打开弹层：撤掉 About 提示 */
-    window.addEventListener('aboutopen', function(){ hide(); });
-    /* ② 关闭弹层：引导切换背景 */
-    window.addEventListener('aboutclose', function(){
-      setTimeout(function(){
-        if (dead) return;
-        if (bgTouched) show(swipeEl, 8000);   /* 背景已切过 → 直接提示翻页 */
-        else show(bgEl, 0);                    /* 一直陪伴到用户切换背景 */
-      }, 700);
-    });
-    /* ③ 切换背景后：撤掉背景提示，引导翻页 */
-    window.addEventListener('bgchange', function(){
-      bgTouched = true;
-      if (dead || !onHero()) return;
-      hide();
-      show(swipeEl, 8000);
-    });
-    /* 翻离首页 → 全部退场 */
-    var guard = setInterval(function(){
-      if (pagerLast !== 0){ kill(); clearInterval(guard); }
-    }, 400);
-    setTimeout(function(){ clearInterval(guard); }, 90000);
-  })();
 
   /* ---------- Scroll-linked edge particles ----------
      the leaving edge of the outgoing page dissolves into drifting dots,
@@ -2542,7 +2313,7 @@ footer a:hover{color:var(--accent);}
         sz = new Float32Array(MAX), seed = new Float32Array(MAX),
         life = new Float32Array(MAX), maxLife = new Float32Array(MAX);
     var mode = new Uint8Array(MAX), col = new Uint8Array(MAX);
-    var spawnCursor = 0, lastSl = 0, lastSt = 0, halt = false;
+    var spawnCursor = 0, lastSl = 0, halt = false;
 
     /* soft-glow dot sprites: cream / green / print-pink */
     function makeSprite(r, g, b){
@@ -2572,17 +2343,17 @@ footer a:hover{color:var(--accent);}
     buildSprites();
     window.addEventListener('bgchange', buildSprites);
 
-    /* per-page glyph points cached in track space: + scrollLeft/+ scrollTop at sample time */
+    /* per-page glyph points cached in track space: x + scrollLeft at sample time */
     function getTrackPoints(idx){
       if (ptCache[idx]) return ptCache[idx];
       var page = panels[idx];
       if (!page){ return null; }
       var pts = samplePagePoints(page, true);
       var arr = new Float32Array(pts.length);
-      var sl0 = book.scrollLeft, st0 = book.scrollTop;
+      var sl0 = book.scrollLeft;
       for (var i = 0; i < pts.length; i += 2){
         arr[i] = pts[i] + sl0;
-        arr[i + 1] = pts[i + 1] + st0;
+        arr[i + 1] = pts[i + 1];
       }
       ptCache[idx] = arr;
       return arr;
@@ -2592,7 +2363,7 @@ footer a:hover{color:var(--accent);}
       var r = Math.random();
       return r < 0.74 ? 0 : (r < 0.92 ? 1 : 2);
     }
-    function spawn(x, y, m, dir, speed, axis){
+    function spawn(x, y, m, dir, speed){
       for (var k = 0; k < MAX; k++){
         var i = (spawnCursor + k) % MAX;
         if (life[i] > 0) continue;
@@ -2603,23 +2374,13 @@ footer a:hover{color:var(--accent);}
         seed[i] = Math.random() * 6.28;
         if (m === 0){ /* dissolve: ink peeling off the leaving glyphs */
           px[i] = ppx[i] = x; py[i] = ppy[i] = y;
-          if (axis === 'y'){ /* 竖向翻阅：向上滚出的页从上缘消散 */
-            vy[i] = -dir * (1.3 + speed * 0.28 + Math.random() * 2.4);
-            vx[i] = (Math.random() - 0.5) * 1.4;
-          } else {
-            vx[i] = -dir * (1.3 + speed * 0.28 + Math.random() * 2.4);
-            vy[i] = (Math.random() - 0.5) * 1.4;
-          }
+          vx[i] = -dir * (1.3 + speed * 0.28 + Math.random() * 2.4);
+          vy[i] = (Math.random() - 0.5) * 1.4;
           life[i] = maxLife[i] = 30 + (Math.random() * 22 | 0);
         } else { /* assemble: swoop in along a curve, spring onto the glyph */
           hx[i] = x; hy[i] = y;
-          if (axis === 'y'){
-            px[i] = ppx[i] = x + (Math.random() - 0.5) * 120;
-            py[i] = ppy[i] = y + dir * (90 + Math.random() * 270);
-          } else {
-            px[i] = ppx[i] = x + dir * (90 + Math.random() * 270);
-            py[i] = ppy[i] = y + (Math.random() - 0.5) * 120;
-          }
+          px[i] = ppx[i] = x + dir * (90 + Math.random() * 270);
+          py[i] = ppy[i] = y + (Math.random() - 0.5) * 120;
           vx[i] = 0; vy[i] = 0;
           life[i] = maxLife[i] = 62 + (Math.random() * 26 | 0);
         }
@@ -2628,58 +2389,41 @@ footer a:hover{color:var(--accent);}
       return false;
     }
 
-    function spawnEdge(idx, m, dir, speed, budget, axis){
+    function spawnEdge(idx, m, dir, speed, budget){
       var pts = getTrackPoints(idx);
       if (!pts || !pts.length) return budget;
-      var sl = book.scrollLeft, st = book.scrollTop;
-      var W = window.innerWidth, H = window.innerHeight;
+      var sl = book.scrollLeft, W = window.innerWidth;
       for (var i = 0; i < pts.length && budget > 0; i += 2){
         if (Math.random() > 0.35) continue;
-        var sx = pts[i] - sl, sy = pts[i + 1] - st;
+        var sx = pts[i] - sl, sy = pts[i + 1];
         var inBand;
-        if (axis === 'y'){
-          if (m === 0){ /* 竖向离开边：dir>0 页从上缘出去，dir<0 页从下缘出去 */
-            inBand = dir > 0 ? (sy > -140 && sy < 50) : (sy > H - 50 && sy < H + 140);
-          } else { /* 竖向进入边 */
-            inBand = dir > 0 ? (sy > H - 170 && sy < H + 90) : (sy > -90 && sy < 170);
-          }
-        } else {
-          if (m === 0){ /* leaving edge */
-            inBand = dir > 0 ? (sx > -140 && sx < 50) : (sx > W - 50 && sx < W + 140);
-          } else { /* arriving edge */
-            inBand = dir > 0 ? (sx > W - 170 && sx < W + 90) : (sx > -90 && sx < 170);
-          }
+        if (m === 0){ /* leaving edge */
+          inBand = dir > 0 ? (sx > -140 && sx < 50) : (sx > W - 50 && sx < W + 140);
+        } else { /* arriving edge */
+          inBand = dir > 0 ? (sx > W - 170 && sx < W + 90) : (sx > -90 && sx < 170);
         }
         if (!inBand) continue;
-        if (spawn(sx, sy, m, dir, speed, axis)) budget--;
+        if (spawn(sx, sy, m, dir, speed)) budget--;
       }
       return budget;
     }
 
     function loop(){
-      if (halt){ lastSl = book.scrollLeft; lastSt = book.scrollTop; requestAnimationFrame(loop); return; }
+      if (halt){ lastSl = book.scrollLeft; requestAnimationFrame(loop); return; }
       var W = window.innerWidth, H = window.innerHeight;
-      var sl = book.scrollLeft, st = book.scrollTop;
-      var vx_ = sl - lastSl, vy_ = st - lastSt;
-      lastSl = sl; lastSt = st;
-      var axis = Math.abs(vy_) > Math.abs(vx_) ? 'y' : 'x';
-      var v = axis === 'y' ? vy_ : vx_;
+      var sl = book.scrollLeft;
+      var v = lenis ? (lenis.velocity || 0) : (sl - lastSl);
+      lastSl = sl;
       var speed = Math.abs(v);
 
       if (speed > 0.45){
         var dir = v > 0 ? 1 : -1;
-        var base, outIdx, inIdx;
-        if (axis === 'y'){ /* 竖向段：work(1) ↔ about(2) */
-          outIdx = dir > 0 ? 1 : 2;
-          inIdx  = dir > 0 ? 2 : 1;
-        } else { /* 横向段：顶行 0↔1，底行 2↔3↔4 */
-          base = st < H * 0.5 ? Math.min(1, Math.floor(sl / W)) : Math.min(3, 2 + Math.floor((sl - W) / W));
-          outIdx = dir > 0 ? base : base + 1;
-          inIdx  = dir > 0 ? base + 1 : base;
-        }
+        var base = Math.max(0, Math.floor(sl / W));
+        var outIdx = dir > 0 ? base : base + 1;
+        var inIdx = dir > 0 ? base + 1 : base;
         var budget = Math.min(34, 5 + (speed * 1.1 | 0));
-        budget = spawnEdge(outIdx, 0, dir, speed, budget, axis);
-        spawnEdge(inIdx, 1, dir, speed, budget, axis);
+        budget = spawnEdge(outIdx, 0, dir, speed, budget);
+        spawnEdge(inIdx, 1, dir, speed, budget);
       }
 
       var time = performance.now() * 0.001;
@@ -2786,12 +2530,14 @@ footer a:hover{color:var(--accent);}
     function closeOverlay(){
       if (!aboutOverlay || !aboutOverlay.classList.contains('on')) return;
       aboutOverlay.classList.remove('on');
+      if (lenis) lenis.start();
       window.dispatchEvent(new Event('aboutclose'));
     }
     if (aboutCorner && aboutOverlay){
       aboutCorner.addEventListener('click', function(){
         if (aboutOverlay.classList.contains('on')) return;
         aboutOverlay.classList.add('on');
+        if (lenis) lenis.stop();
         window.dispatchEvent(new Event('aboutopen'));
         /* sample glyph positions BEFORE gsap slides them in */
         var toPts = samplePagePoints(aboutOverlay, true);
