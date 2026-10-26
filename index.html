@@ -326,12 +326,13 @@ html.reduced .reveal{opacity:1;transform:none;}
 .section-title em{font-style:italic;}
 
 /* ============ BOOK LAYOUT (horizontal pages) ============ */
-.book{height:100svh;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+.book{height:100svh;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;touch-action:pan-y pinch-zoom;}
 .book::-webkit-scrollbar{display:none;}
 .book-track{display:flex;align-items:stretch;height:100%;position:relative;}
 .page{
   flex:0 0 100vw;height:100svh;position:relative;
   overflow-y:auto;overflow-x:hidden;scrollbar-width:none;
+  touch-action:pan-y pinch-zoom;overscroll-behavior-y:contain;
 }
 .page::-webkit-scrollbar{display:none;}
 section.page{padding:clamp(4rem,10vh,7rem) var(--pad);}
@@ -1451,6 +1452,85 @@ footer a:hover{color:var(--accent);}
     book.addEventListener('scroll', function(){ updateProgress(); updateNavActive(); }, { passive: true });
   }
   updateProgress();
+
+  /* ---------- Touch navigation: horizontal pages, native vertical reading ---------- */
+  (function(){
+    if (!book || !track) return;
+    var pages = Array.prototype.slice.call(track.querySelectorAll('.page'));
+    if (!pages.length) return;
+    // The track is below Lenis's wrapper, so its touch guard is in every page's event path.
+    book.setAttribute('data-lenis-prevent-touch', '');
+    track.setAttribute('data-lenis-prevent-touch', '');
+    var gesture = null, turningUntil = 0, suppressUntil = 0;
+
+    function blocked(target){
+      var overlay = document.getElementById('aboutOverlay');
+      return (overlay && overlay.classList.contains('on')) ||
+        (window.visualViewport && window.visualViewport.scale > 1.01) ||
+        (target && target.closest && target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="slider"],canvas,[data-touch-local]'));
+    }
+    function cancel(){ gesture = null; }
+    book.addEventListener('touchstart', function(e){
+      cancel();
+      if (e.touches.length !== 1) return;
+      suppressUntil = 0; // A new intentional tap must not inherit the previous swipe's click guard.
+      if (performance.now() < turningUntil || blocked(e.target)) return;
+      var point = e.touches[0], width = Math.max(1, book.clientWidth);
+      gesture = {
+        id: point.identifier, x: point.clientX, y: point.clientY, lastY: point.clientY,
+        dx: 0, axis: null, width: width,
+        index: Math.max(0, Math.min(pages.length - 1, Math.round(book.scrollLeft / width)))
+      };
+    }, { capture: true, passive: true });
+    book.addEventListener('touchmove', function(e){
+      if (!gesture) return;
+      if (e.touches.length !== 1 || blocked(e.target)){ cancel(); return; }
+      var point = e.touches[0];
+      if (point.identifier !== gesture.id){ cancel(); return; }
+      var dx = gesture.x - point.clientX, dy = gesture.y - point.clientY;
+      var step = gesture.lastY - point.clientY;
+      gesture.lastY = point.clientY;
+      if (!gesture.axis){
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 10) return;
+        if (Math.abs(dx) >= Math.abs(dy) * 1.25) gesture.axis = 'x';
+        else if (Math.abs(dy) >= Math.abs(dx) * 1.25) gesture.axis = 'y';
+      }
+      if (gesture.axis === 'y'){
+        if (workReader) workReader.touch(step);
+        return; // Keep native vertical scrolling and momentum, including at either end.
+      }
+      if (gesture.axis !== 'x') return;
+      if (!e.cancelable){ cancel(); return; } // The browser already owns this gesture.
+      gesture.dx = dx;
+      suppressUntil = performance.now() + 450;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, { capture: true, passive: false });
+    book.addEventListener('touchend', function(e){
+      var done = gesture;
+      cancel();
+      if (!done || done.axis !== 'x' || e.touches.length || blocked(e.target)) return;
+      var point = Array.prototype.find.call(e.changedTouches || [], function(p){ return p.identifier === done.id; });
+      if (point) done.dx = done.x - point.clientX;
+      suppressUntil = performance.now() + 450;
+      if (Math.abs(done.dx) < Math.max(48, Math.min(96, done.width * 0.12))) return;
+      var index = Math.max(0, Math.min(pages.length - 1, done.index + (done.dx > 0 ? 1 : -1)));
+      if (index === done.index) return;
+      turningUntil = performance.now() + (REDUCED ? 0 : 650);
+      if (lenis) lenis.scrollTo(pages[index].offsetLeft, { duration: 0.65 });
+      else book.scrollTo({ left: pages[index].offsetLeft, behavior: REDUCED ? 'auto' : 'smooth' });
+    }, { capture: true, passive: true });
+    book.addEventListener('touchcancel', cancel, { capture: true, passive: true });
+    book.addEventListener('click', function(e){
+      if (e.detail !== 0 && performance.now() < suppressUntil){
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }, { capture: true });
+    window.addEventListener('blur', cancel);
+    window.addEventListener('resize', cancel, { passive: true });
+    document.addEventListener('visibilitychange', function(){ if (document.hidden) cancel(); });
+  })();
 
   /* ---------- 键盘 ← → 翻页（首页让给小猫/转盘，About 弹层打开时锁定） ---------- */
   document.addEventListener('keydown', function(e){
@@ -2669,29 +2749,6 @@ footer a:hover{color:var(--accent);}
     book.addEventListener('scroll', queue, { passive: true });
     window.addEventListener('resize', queue, { passive: true });
 
-    // Keep native touch momentum inside the long page; a fresh end swipe turns it.
-    page.setAttribute('data-lenis-prevent-touch', '');
-    var touch = null;
-    page.addEventListener('touchstart', function(e){
-      if (e.touches.length !== 1){ touch = null; return; }
-      var point = e.touches[0];
-      touch = { x: point.clientX, y: point.clientY, end: bottom() && !next() && !busy, start: page.scrollTop <= 1 };
-      manualUntil = 0;
-    }, { passive: true });
-    page.addEventListener('touchmove', function(e){
-      if (!touch || e.touches.length !== 1 || !active()) return;
-      var dx = touch.x - e.touches[0].clientX, dy = touch.y - e.touches[0].clientY;
-      if (Math.abs(dy) <= Math.abs(dx)) return;
-      down = dy > 0;
-      queue();
-      if ((touch.end && dy > 64) || (touch.start && dy < -64)){
-        e.preventDefault();
-        turn(page.offsetLeft + (dy > 0 ? 1 : -1) * book.clientWidth);
-        touch = null;
-      }
-    }, { passive: false });
-    page.addEventListener('touchend', function(){ touch = null; }, { passive: true });
-    page.addEventListener('touchcancel', function(){ touch = null; }, { passive: true });
     document.addEventListener('keydown', function(e){
       if (!active() || (e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"],[role="slider"]'))) return;
       if (['ArrowDown', 'PageDown', ' '].indexOf(e.key) !== -1){ down = true; manualUntil = 0; }
@@ -2699,6 +2756,12 @@ footer a:hover{color:var(--accent);}
     });
     queue();
     return {
+      touch: function(delta){
+        if (!active()) return;
+        manualUntil = 0;
+        if (delta) down = delta > 0;
+        queue();
+      },
       wheel: function(e, pg){
         var delta = e.deltaY * (e.deltaMode === 1 ? 100 / 6 : e.deltaMode === 2 ? window.innerHeight : 1);
         if (!delta) return false;
