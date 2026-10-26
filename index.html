@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>XIAO YUANQI 肖袁琪 — AI 应用工程师</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231B1E26'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23FFFBF2'/%3E%3C/svg%3E">
-<meta name="description" content="肖袁琪 XIAO YUANQI — AI 应用 / Agent 开发应届生个人作品集：样机管理智能体、多模态情感记忆平台、病虫害识别、语音填表、投研 Agent 工作台">
+<meta name="description" content="肖袁琪 XIAO YUANQI — AI 应用 / Agent 开发应届生个人作品集：GitHub 每日项目推送、样机管理智能体、多模态情感记忆平台、病虫害识别、语音填表、投研 Agent 工作台">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400&display=swap" rel="stylesheet">
@@ -1065,9 +1065,33 @@ footer a:hover{color:var(--accent);}
   <section class="page" id="work" aria-label="精选作品">
     <div class="eyebrow mono reveal"><span>02 — WORK</span><span class="eb-cn">作品</span><span>AI 应用 · Agent 开发</span></div>
     <ul class="work-list" id="workList">
+      <li class="work-row" data-img="work-daily-press.jpg">
+        <button class="work-head" aria-expanded="false" aria-controls="dailyPressDetail">
+          <span class="work-idx mono">01<span class="motif-dot"></span></span>
+          <span class="work-title">GitHub 每日项目推送</span>
+          <span class="work-cat mono">AI PIPELINE · DESKTOP</span>
+          <span class="work-year mono">2026</span>
+          <span class="work-cn">把开源热点读成中文杂志——AI 采编、项目档案与多端阅读</span>
+        </button>
+        <div class="work-detail" id="dailyPressDetail">
+          <div class="work-detail-clip">
+            <div class="work-detail-inner">
+              <div class="wd-text">
+                <p class="wd-en">An AI-assisted publishing pipeline that turns GitHub Trending and source-linked AI news into a Chinese magazine. Python collectors and pluggable model adapters feed dated reports and project timelines; a static PWA reader and a pywebview desktop app share the generated content. Existing AI coding agents can supply content through a checked import-and-publish workflow.</p>
+                <p class="wd-cn">从真实榜单与资讯来源采集，到模型归纳、日报生成、项目历史档案及静态发布，串起可追溯的内容流程。支持第三方兼容接口与本地 Ollama，也可由已有 AI Agent 工具采编后导入；重复执行不重复归档，失败保留上一份有效内容。原生 HTML／CSS／JavaScript 构成中文杂志阅读器，Service Worker 支持离线缓存，Python + pywebview 提供桌面独立窗口。</p>
+                <p class="wd-cn wd-note">v1.0.0 已发布：Mac arm64 桌面首启与 PWA 离线冷启动已有实测记录；Intel Mac／Windows 完成构建，实机交互及云端真实模型采编仍待验收。</p>
+                <p><a class="u-link" href="https://0505ttt.github.io/github-daily-press/" target="_blank" rel="noopener">在线阅读杂志 ↗</a><br><a class="u-link" href="https://github.com/0505ttt/github-daily-press" target="_blank" rel="noopener">GitHub 源码 ↗</a><br><a class="u-link" href="https://github.com/0505ttt/github-daily-press/releases/tag/v1.0.0" target="_blank" rel="noopener">v1.0.0 下载与验收说明 ↗</a></p>
+                <ul class="wd-tags"><li>PYTHON 3.11+</li><li>BEAUTIFULSOUP</li><li>LLM PIPELINE</li><li>PWA</li><li>PYWEBVIEW</li><li>GITHUB ACTIONS</li></ul>
+              </div>
+              <figure class="wd-media"><img src="work-daily-press.jpg" alt="GitHub 每日项目推送 · 中文杂志阅读总览" loading="lazy"><img src="work-daily-press-archive.jpg" alt="GitHub 每日项目推送 · 项目资料与历史上榜时间线" loading="lazy"><figcaption class="wd-note mono">实际界面 · 2026-10-23 公共杂志样例</figcaption></figure>
+            </div>
+          </div>
+        </div>
+      </li>
+
       <li class="work-row" data-img="work-lamp.jpg">
         <button class="work-head" aria-expanded="false">
-          <span class="work-idx mono">01<span class="motif-dot"></span></span>
+          <span class="work-idx mono">02<span class="motif-dot"></span></span>
           <span class="work-title">Lampfolio · 灯下集</span>
           <span class="work-cat mono">CREATIVE WEBSITE</span>
           <span class="work-year mono">2026</span>
@@ -1089,7 +1113,7 @@ footer a:hover{color:var(--accent);}
       </li>
       <li class="work-row" data-img="work-agrivision.jpg">
         <button class="work-head" aria-expanded="false">
-          <span class="work-idx mono">02<span class="motif-dot"></span></span>
+          <span class="work-idx mono">03<span class="motif-dot"></span></span>
           <span class="work-title">农业病虫害识别系统</span>
           <span class="work-cat mono">DEEP LEARNING</span>
           <span class="work-year mono">2025</span>
@@ -1111,7 +1135,7 @@ footer a:hover{color:var(--accent);}
 
       <li class="work-row" data-img="work-zxrd.jpg">
         <button class="work-head" aria-expanded="false">
-          <span class="work-idx mono">03<span class="motif-dot"></span></span>
+          <span class="work-idx mono">04<span class="motif-dot"></span></span>
           <span class="work-title">投研助手 Agent 应用</span>
           <span class="work-cat mono">AGENT BACKEND</span>
           <span class="work-year mono">2026</span>
@@ -1133,7 +1157,7 @@ footer a:hover{color:var(--accent);}
 
       <li class="work-row" data-img="work-eyes.jpg">
         <button class="work-head" aria-expanded="false">
-          <span class="work-idx mono">04<span class="motif-dot"></span></span>
+          <span class="work-idx mono">05<span class="motif-dot"></span></span>
           <span class="work-title">多模态 AI 情感平台</span>
           <span class="work-cat mono">MULTIMODAL AI</span>
           <span class="work-year mono">2026</span>
@@ -1155,7 +1179,7 @@ footer a:hover{color:var(--accent);}
 
       <li class="work-row" data-img="work-agent.jpg">
         <button class="work-head" aria-expanded="false">
-          <span class="work-idx mono">05<span class="motif-dot"></span></span>
+          <span class="work-idx mono">06<span class="motif-dot"></span></span>
           <span class="work-title">样机管理智能体</span>
           <span class="work-cat mono">ENTERPRISE AGENT</span>
           <span class="work-year mono">2026</span>
@@ -1177,7 +1201,7 @@ footer a:hover{color:var(--accent);}
 
       <li class="work-row" data-img="work-speakform.jpg">
         <button class="work-head" aria-expanded="false">
-          <span class="work-idx mono">06<span class="motif-dot"></span></span>
+          <span class="work-idx mono">07<span class="motif-dot"></span></span>
           <span class="work-title">语音填表 App</span>
           <span class="work-cat mono">ANDROID · ASR</span>
           <span class="work-year mono">2026</span>
@@ -1220,7 +1244,7 @@ footer a:hover{color:var(--accent);}
       <div class="about-col">
         <h3>项目 · PROJECTS</h3>
         <ul>
-          <li><b>六个端到端做完的项目</b><br>企业级 Agent、多模态 AI 情感平台、端侧病虫害识别、安卓语音填表、私募投研后端与一盏台灯的个人站——见「作品」页。</li>
+          <li><b>七个端到端做完的项目</b><br>GitHub 热点杂志、企业级 Agent、多模态 AI 情感平台、端侧病虫害识别、安卓语音填表、私募投研后端与一盏台灯的个人站——见「作品」页。</li>
         </ul>
       </div>
       <div class="about-col">
@@ -2571,15 +2595,20 @@ footer a:hover{color:var(--accent);}
   var rows = Array.prototype.slice.call(document.querySelectorAll('.work-row'));
   rows.forEach(function(row){
     var head = row.querySelector('.work-head');
+    var detail = row.querySelector('.work-detail');
+    if (detail) detail.inert = !row.classList.contains('open');
     head.addEventListener('click', function(){
       var isOpen = row.classList.contains('open');
       rows.forEach(function(r){
         r.classList.remove('open');
         r.querySelector('.work-head').setAttribute('aria-expanded', 'false');
+        var panel = r.querySelector('.work-detail');
+        if (panel) panel.inert = true;
       });
       if (!isOpen){
         row.classList.add('open');
         head.setAttribute('aria-expanded', 'true');
+        if (detail) detail.inert = false;
         setTimeout(function(){
           var pg = row.closest('.page');
           if (!pg || pg.scrollHeight <= pg.clientHeight + 2) return;
