@@ -1362,9 +1362,9 @@ footer a:hover{color:var(--accent);}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
-<script src="book-navigation.js?v=interaction-preview-7"></script>
-<script src="follow-reader.js?v=interaction-preview-7"></script>
-<script src="work-touch.js?v=interaction-preview-7"></script>
+<script src="book-navigation.js?v=20261027-release-1"></script>
+<script src="follow-reader.js?v=20261027-release-1"></script>
+<script src="work-touch.js?v=20261027-release-1"></script>
 <script>
 (function(){
   'use strict';
@@ -2596,7 +2596,9 @@ footer a:hover{color:var(--accent);}
   workReader = (function(){
     var page = document.getElementById('work');
     if (!page || !book || !rows.length) return null;
-    var readingMode = new URLSearchParams(window.location.search).get('motion');
+    var readingParams = new URLSearchParams(window.location.search);
+    var readingMode = readingParams.get('motion') ||
+      (readingParams.get('preview') === 'navigation' ? 'legacy' : 'all');
     if (readingMode === 'follow' || readingMode === 'all'){
       return createFollowReader({
         page: page, rows: rows, navigation: navigation, reduced: REDUCED,
