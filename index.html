@@ -393,6 +393,7 @@ html.reduced .page-inner{transform:none!important;opacity:1!important;}
   transition:grid-template-rows 0.55s var(--ease);
 }
 .work-row.open .work-detail{grid-template-rows:1fr;}
+.work-row.follow .work-detail{display:block;height:0;overflow:hidden;transition:none;}
 .work-detail-clip{overflow:hidden;}
 .work-detail-inner{
   display:grid;grid-template-columns:repeat(12,1fr);gap:1.5rem;
@@ -1361,6 +1362,8 @@ footer a:hover{color:var(--accent);}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
+<script src="book-navigation.js?v=trackpad-preview-2"></script>
+<script src="follow-reader.js?v=trackpad-preview-2"></script>
 <script>
 (function(){
   'use strict';
@@ -1391,36 +1394,17 @@ footer a:hover{color:var(--accent);}
   var track = document.getElementById('bookTrack');
   var lenis = null;
   var workReader = null;
-
-  /* vertical handoff: a page that overflows vertically (expanded WORK rows,
-     tall lists) consumes the wheel up/down; only at its ends does the wheel
-     fall through to Lenis and flip the book sideways */
-  if (book){
-    book.addEventListener('wheel', function(e){
-      if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
-      var pg = e.target && e.target.closest && e.target.closest('.page');
-      if (!pg) return;
-      if (workReader && workReader.wheel(e, pg)) return;
-      if (Math.abs(book.scrollLeft - pg.offsetLeft) > book.clientWidth * 0.2) return;
-      var delta = e.deltaY * (e.deltaMode === 1 ? 100 / 6 : e.deltaMode === 2 ? window.innerHeight : 1);
-      var st = pg.scrollTop, down = e.deltaY > 0;
-      var atTop = st <= 1;
-      var atBottom = st + pg.clientHeight >= pg.scrollHeight - 1;
-      if ((down && !atBottom) || (!down && !atTop)){
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        pg.scrollTop = st + delta;
-      } else if (!lenis){
-        e.preventDefault();
-        book.scrollLeft += delta;
-      }
-    }, { capture:true, passive:false });
-  }
+  var navigation = createBookNavigation({
+    book: book, track: track, reduced: REDUCED,
+    getLenis: function(){ return lenis; },
+    getReader: function(){ return workReader; }
+  });
   if (!REDUCED && typeof window.Lenis !== 'undefined' && hasGsap){
     lenis = new Lenis({
       wrapper: book,
       content: track,
       orientation: 'horizontal',
+      gestureOrientation: 'both',
       duration: 1.2,
       smoothWheel: true
     });
@@ -1455,6 +1439,7 @@ footer a:hover{color:var(--accent);}
   /* ---------- 键盘 ← → 翻页（首页让给小猫/转盘，About 弹层打开时锁定） ---------- */
   document.addEventListener('keydown', function(e){
     if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    if (e.target.closest && e.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="slider"],canvas')) return;
     var ov = document.getElementById('aboutOverlay');
     if (ov && ov.classList.contains('on')) return;
     if (!book || !track) return;
@@ -1464,8 +1449,7 @@ footer a:hover{color:var(--accent);}
     var max = Math.max(0, track.scrollWidth - w);
     var targetX = Math.max(0, Math.min(max, (Math.round(book.scrollLeft / w) + dir) * w));
     e.preventDefault();
-    if (lenis) lenis.scrollTo(targetX, { duration: 1.0 });
-    else book.scrollTo({ left: targetX, behavior: REDUCED ? 'auto' : 'smooth' });
+    navigation.goTo(targetX);
   });
 
   /* ---------- Anchor scrolling ---------- */
@@ -1475,11 +1459,7 @@ footer a:hover{color:var(--accent);}
       var target = id === '#top' ? document.body : document.querySelector(id);
       if (!target) return;
       e.preventDefault();
-      if (lenis){
-        lenis.scrollTo(id === '#top' ? 0 : target.offsetLeft, { duration: 1.4 });
-      } else {
-        book.scrollTo({ left: id === '#top' ? 0 : target.offsetLeft, behavior: REDUCED ? 'auto' : 'smooth' });
-      }
+      navigation.goTo(id === '#top' ? 0 : target.offsetLeft);
     });
   });
 
@@ -2603,6 +2583,11 @@ footer a:hover{color:var(--accent);}
   workReader = (function(){
     var page = document.getElementById('work');
     if (!page || !book || !rows.length) return null;
+    if (new URLSearchParams(window.location.search).get('motion') === 'follow'){
+      return createFollowReader({
+        page: page, rows: rows, navigation: navigation, reduced: REDUCED, progressiveCount: 1
+      });
+    }
     var items = rows.map(function(row, i){
       var head = row.querySelector('.work-head');
       var detail = row.querySelector('.work-detail');
@@ -2612,9 +2597,9 @@ footer a:hover{color:var(--accent);}
       return { row: row, head: head, detail: detail, seen: row.classList.contains('open') };
     });
     var busy = null, timer = 0, frame = 0;
-    var lastTop = page.scrollTop, down = true, manualUntil = 0, lastWheel = 0;
+    var lastTop = page.scrollTop, down = true, manualUntil = 0;
 
-    function active(){ return Math.abs(book.scrollLeft - page.offsetLeft) < book.clientWidth * 0.2; }
+    function active(){ return navigation.isSettled(page); }
     function next(){ return items.find(function(item){ return !item.seen; }); }
     function bottom(){ return page.scrollTop + page.clientHeight >= page.scrollHeight - 2; }
     function relativeTop(item){ return item.row.getBoundingClientRect().top - page.getBoundingClientRect().top; }
@@ -2644,10 +2629,8 @@ footer a:hover{color:var(--accent);}
       if (item && ((!items[0].seen) || (down && relativeTop(item) <= page.clientHeight * 0.72 + 2))) reveal(item);
     }
     function turn(left){
-      if (lenis) lenis.scrollTo(left, { duration: 0.65 });
-      else book.scrollTo({ left: left, behavior: REDUCED ? 'auto' : 'smooth' });
+      navigation.goTo(left);
     }
-    function consume(e){ e.preventDefault(); e.stopImmediatePropagation(); return true; }
 
     items.forEach(function(item){
       item.detail.addEventListener('transitionend', function(e){
@@ -2673,13 +2656,19 @@ footer a:hover{color:var(--accent);}
     page.setAttribute('data-lenis-prevent-touch', '');
     var touch = null;
     page.addEventListener('touchstart', function(e){
-      if (e.touches.length !== 1){ touch = null; return; }
+      if (e.touches.length !== 1 || !active()){ touch = null; return; }
       var point = e.touches[0];
-      touch = { x: point.clientX, y: point.clientY, end: bottom() && !next() && !busy, start: page.scrollTop <= 1 };
+      touch = { id: point.identifier, x: point.clientX, y: point.clientY,
+        end: bottom() && !next() && !busy, start: page.scrollTop <= 1 };
       manualUntil = 0;
     }, { passive: true });
     page.addEventListener('touchmove', function(e){
-      if (!touch || e.touches.length !== 1 || !active()) return;
+      if (!touch) return;
+      // A different finger, pinch, incomplete landing or browser-owned gesture
+      // must not revive the earlier boundary swipe.
+      if (e.touches.length !== 1 || !active() || !e.cancelable || e.touches[0].identifier !== touch.id){
+        touch = null; return;
+      }
       var dx = touch.x - e.touches[0].clientX, dy = touch.y - e.touches[0].clientY;
       if (Math.abs(dy) <= Math.abs(dx)) return;
       down = dy > 0;
@@ -2699,19 +2688,13 @@ footer a:hover{color:var(--accent);}
     });
     queue();
     return {
-      wheel: function(e, pg){
-        var delta = e.deltaY * (e.deltaMode === 1 ? 100 / 6 : e.deltaMode === 2 ? window.innerHeight : 1);
-        if (!delta) return false;
-        // Large or accumulated wheel deltas stop at WORK before crossing its content.
-        var target = lenis && Number.isFinite(lenis.targetScroll) ? lenis.targetScroll : book.scrollLeft;
-        if (delta > 0 && next() && book.scrollLeft < page.offsetLeft - 2 &&
-            pg.scrollTop + pg.clientHeight >= pg.scrollHeight - 2 && target + delta >= page.offsetLeft){
-          turn(page.offsetLeft);
-          return consume(e);
-        }
-        if (pg !== page || !active()) return false;
-        var now = performance.now(), gap = now - lastWheel;
-        lastWheel = now;
+      page: page,
+      refresh: queue,
+      canLeave: function(direction){
+        return active() && (direction < 0 ? page.scrollTop <= 1 : !next() && !busy && bottom());
+      },
+      scrollBy: function(delta){
+        if (!delta || !active()) return;
         down = delta > 0;
         manualUntil = 0;
         if (down){
@@ -2724,14 +2707,10 @@ footer a:hover{color:var(--accent);}
             if (pending) limit = Math.min(limit, Math.max(page.scrollTop, page.scrollTop + relativeTop(pending) - page.clientHeight * 0.72));
             page.scrollTop = Math.min(limit, page.scrollTop + delta);
             queue();
-            return consume(e);
           }
-          if (gap < 180) return consume(e); // Do not hand the same inertial gesture to the next page.
         } else if (page.scrollTop > 1){
           page.scrollTop += delta;
-          return consume(e);
         }
-        return false;
       }
     };
   })();
