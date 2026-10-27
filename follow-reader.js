@@ -10,6 +10,7 @@
     var progressiveCount = options.progressiveCount === undefined ? 1 : Math.max(0, options.progressiveCount);
     var virtualExtra = 0, lastTop = page.scrollTop, down = false;
     var refreshFrame = 0, layoutFrame = 0, layoutPending = false;
+    var nativeInput = false, nativeTimer = 0, nativeTouch = null;
     var items = Array.prototype.slice.call(options.rows || []).map(function(row, index){
       var head = row.querySelector('.work-head');
       var detail = row.querySelector('.work-detail');
@@ -37,6 +38,16 @@
       var item = next();
       return item && item.progressive && !item.manual && !item.complete ? item : null;
     }
+    function readingAnchor(){
+      var pending = currentProgressive();
+      if (pending) return pending;
+      var anchor = items[0];
+      items.some(function(item){
+        if (relativeTop(item) > 0) return true;
+        anchor = item; return false;
+      });
+      return anchor;
+    }
     function busy(){ return items.some(function(item){ return item.busy; }); }
     function setOpen(item, open){
       item.row.classList.toggle('open', open);
@@ -48,7 +59,7 @@
       // travel: doing so turns layout growth into artificial scrolling.
       var height = Math.max(item.inner.scrollHeight || 0, item.inner.getBoundingClientRect().height || 0);
       item.naturalHeight = height;
-      if (!item.travel && height > 0) item.travel = clamp(height * 0.35, 80, 360);
+      if (height > 0) item.travel = clamp(height * 0.35, 80, 360);
     }
     function noteLayout(){
       layoutPending = true;
@@ -81,8 +92,12 @@
     function updateProgress(item){
       if (!item || item.complete || item.manual || !active()) return;
       initializeStart(item);
-      var progress = clamp((effectiveTop() - item.start) / Math.max(80, item.travel), 0, 1);
-      if (progress >= 1) completeProgressive(item);
+      var travel = Math.max(80, item.travel), distance = effectiveTop() - item.start;
+      var progress = clamp(distance / travel, 0, 1);
+      // Fractional layout heights and native scroll rounding can leave an
+      // accepted distance infinitesimally below its endpoint. Complete within
+      // 0.01 CSS px rather than accepting a zero-size remainder forever.
+      if (travel - distance <= 0.01) completeProgressive(item);
       else if (progress !== item.progress){ item.progress = progress; render(item); }
     }
     function finish(item){
@@ -108,13 +123,26 @@
     }
     function refreshNow(){
       refreshFrame = 0;
+      // Keep the active unfinished heading in place if an earlier completed
+      // project changes height. Its own extent changes never advance progress.
+      var anchor = readingAnchor();
+      var anchorTop = anchor ? relativeTop(anchor) : null;
+      var beforeEffective = effectiveTop();
       items.forEach(function(item){
         if (!item.progressive) return;
         measure(item);
-        if (item.progress > 0 && !item.complete && item.start !== null){
-          item.start = effectiveTop() - item.progress * Math.max(80, item.travel);
-        } else if (!item.complete){ item.start = active() ? headerStart(item) : null; }
         render(item);
+      });
+      if (anchor && anchorTop !== null){
+        writeTop(page.scrollTop + relativeTop(anchor) - anchorTop);
+      }
+      items.forEach(function(item){
+        if (!item.progressive || item.complete) return;
+        if (item !== anchor && item.progress === 0){ item.start = null; return; }
+        if (item.progress > 0 && item.start !== null){
+          item.start = effectiveTop() - item.progress * Math.max(80, item.travel);
+        } else if (item.start !== null){ item.start += effectiveTop() - beforeEffective; }
+        else item.start = active() ? headerStart(item) : null;
       });
       lastTop = page.scrollTop;
       checkLegacy();
@@ -134,9 +162,17 @@
       }
       if (down && item){
         var before = page.scrollTop;
-        writeTop(before + delta);
-        var blocked = Math.max(0, delta - (page.scrollTop - before));
-        if (blocked > 0 && bottom()) virtualExtra += blocked;
+        // One input belongs to the current project only. Discard surplus after
+        // completion instead of letting a large wheel/PageDown jump over the
+        // next title or fill several projects in one frame.
+        var accepted = Math.min(delta, Math.max(0, item.start + Math.max(80, item.travel) - effectiveTop()));
+        // Preserve a visible heading even in a very short viewport. Any input
+        // blocked by this display bound (or by native bottom) remains reversible
+        // virtual reading distance; it is not handed to the next project.
+        var headingLimit = Math.max(before, before + relativeTop(item) - Math.min(80, page.clientHeight * 0.12));
+        writeTop(Math.min(before + accepted, headingLimit));
+        var blocked = Math.max(0, accepted - (page.scrollTop - before));
+        if (blocked > 0) virtualExtra += blocked;
         updateProgress(item);
         checkLegacy();
         return;
@@ -206,16 +242,56 @@
       });
       item.detail.addEventListener('load', queueRefresh, true);
     });
-    page.addEventListener('scroll', function(){
-      var top = page.scrollTop, delta = top - lastTop;
-      lastTop = top;
-      if (!active() || layoutPending || Math.abs(delta) <= 0.5) return;
-      down = delta > 0;
-      var item = currentProgressive();
-      initializeStart(item); updateProgress(item);
-      if (down) checkLegacy();
+    function clearNativeInput(){
+      nativeInput = false;
+      global.clearTimeout(nativeTimer); nativeTimer = 0;
+    }
+    function cancelNativeInput(){ nativeTouch = null; clearNativeInput(); }
+    function armNativeInput(){
+      nativeInput = true;
+      global.clearTimeout(nativeTimer);
+      nativeTimer = global.setTimeout(clearNativeInput, 180);
+    }
+    page.addEventListener('touchstart', function(event){
+      clearNativeInput(); nativeTouch = null;
+      if (!active() || event.touches.length !== 1) return;
+      var point = event.touches[0];
+      nativeTouch = { id: point.identifier, x: point.clientX, y: point.clientY, vertical: false };
     }, { passive: true });
-    global.addEventListener('resize', queueRefresh, { passive: true });
+    page.addEventListener('touchmove', function(event){
+      if (!nativeTouch) return;
+      if (!active() || event.touches.length !== 1 || event.touches[0].identifier !== nativeTouch.id){
+        nativeTouch = null; clearNativeInput(); return;
+      }
+      var point = event.touches[0];
+      var dx = nativeTouch.x - point.clientX, dy = nativeTouch.y - point.clientY;
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) >= 4){ nativeTouch.vertical = true; armNativeInput(); }
+    }, { passive: true });
+    page.addEventListener('touchend', function(){
+      if (nativeTouch && nativeTouch.vertical) armNativeInput();
+      nativeTouch = null;
+    }, { passive: true });
+    page.addEventListener('touchcancel', function(){ nativeTouch = null; clearNativeInput(); }, { passive: true });
+    page.addEventListener('scroll', function(){
+      var top = page.scrollTop, previous = lastTop, delta = top - previous;
+      lastTop = top;
+      if (layoutPending || Math.abs(delta) <= 0.5) return;
+      if (!active() || !nativeInput){
+        var pending = currentProgressive();
+        if (pending){
+          if (pending.start === null) pending.start = effectiveTop() - pending.progress * Math.max(80, pending.travel);
+          else pending.start += delta;
+        }
+        return;
+      }
+      armNativeInput();
+      // Native touch/keyboard supplies the distance. Feed it through the same
+      // per-project bound as wheel input; subsequent script scroll events see
+      // lastTop already updated and cannot consume that distance a second time.
+      writeTop(previous);
+      scrollBy(delta);
+    }, { passive: true });
+    global.addEventListener('resize', function(){ cancelNativeInput(); queueRefresh(); }, { passive: true });
     if (global.ResizeObserver){
       var observer = new global.ResizeObserver(queueRefresh);
       items.forEach(function(item){ observer.observe(item.inner); });
@@ -225,17 +301,22 @@
     }
     if (global.document){
       global.document.addEventListener('keydown', function(event){
-        if (!active() || (event.target.closest && event.target.closest('input,textarea,select,[contenteditable="true"],[role="slider"]'))) return;
-        if (event.key === 'ArrowUp' || event.key === 'PageUp' || (event.key === ' ' && event.shiftKey)) down = false;
-        else if (event.key === 'ArrowDown' || event.key === 'PageDown' || event.key === ' ') down = true;
+        if (!active() || (event.target.closest && event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"]),[role="slider"]'))) return;
+        if (event.key === 'ArrowUp' || event.key === 'PageUp' || (event.key === ' ' && event.shiftKey)){ down = false; armNativeInput(); }
+        else if (event.key === 'ArrowDown' || event.key === 'PageDown' || event.key === ' '){ down = true; armNativeInput(); }
       });
     }
+    global.addEventListener('blur', cancelNativeInput);
+    global.addEventListener('aboutopen', cancelNativeInput);
+    if (global.document) global.document.addEventListener('visibilitychange', function(){
+      if (global.document.hidden) cancelNativeInput();
+    });
     // Prevent a growing detail from moving the browser's native scroll anchor.
     // Reading progress is driven by input coordinates, not its own layout writes.
     page.style.overflowAnchor = 'none';
     queueRefresh();
     return {
-      page: page, scrollBy: scrollBy, refresh: queueRefresh,
+      page: page, scrollBy: scrollBy, refresh: function(){ cancelNativeInput(); queueRefresh(); },
       canLeave: function(direction){
         var progressive = currentProgressive();
         // At a native top of zero there can still be reversible reading input

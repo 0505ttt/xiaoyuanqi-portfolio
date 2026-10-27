@@ -1362,8 +1362,9 @@ footer a:hover{color:var(--accent);}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
-<script src="book-navigation.js?v=trackpad-preview-2"></script>
-<script src="follow-reader.js?v=trackpad-preview-2"></script>
+<script src="book-navigation.js?v=interaction-preview-7"></script>
+<script src="follow-reader.js?v=interaction-preview-7"></script>
+<script src="work-touch.js?v=interaction-preview-7"></script>
 <script>
 (function(){
   'use strict';
@@ -1666,7 +1667,8 @@ footer a:hover{color:var(--accent);}
       requestAnimationFrame(pTick);
     })(performance.now());
     function drawWave(){
-      if (!waveC || !analyser) return;
+      if (!waveC || !analyser || document.hidden ||
+          (book && book.scrollLeft >= window.innerWidth) || Math.abs(off(playerIdx)) >= 2) return;
       var w = waveC.clientWidth, h = waveC.clientHeight;
       if (!w || !h) return;
       if (waveC.width !== Math.floor(w * dprG())){ waveC.width = Math.floor(w * dprG()); waveC.height = Math.floor(h * dprG()); }
@@ -2327,6 +2329,7 @@ footer a:hover{color:var(--accent);}
         life = new Float32Array(MAX), maxLife = new Float32Array(MAX);
     var mode = new Uint8Array(MAX), col = new Uint8Array(MAX);
     var spawnCursor = 0, lastSl = 0, halt = false;
+    var activeParticles = 0, morphNeedsClear = false;
 
     /* soft-glow dot sprites: cream / green / print-pink */
     function makeSprite(r, g, b){
@@ -2397,6 +2400,7 @@ footer a:hover{color:var(--accent);}
           vx[i] = 0; vy[i] = 0;
           life[i] = maxLife[i] = 62 + (Math.random() * 26 | 0);
         }
+        activeParticles++;
         return true;
       }
       return false;
@@ -2439,12 +2443,20 @@ footer a:hover{color:var(--accent);}
         spawnEdge(inIdx, 1, dir, speed, budget);
       }
 
+      // An empty transparent canvas needs no repaint or 4200-slot scan. Retain
+      // the lightweight scroll watcher so new movement wakes the same effect.
+      if (!activeParticles){
+        if (morphNeedsClear){ ctx.clearRect(0, 0, W, H); morphNeedsClear = false; }
+        requestAnimationFrame(loop); return;
+      }
+      morphNeedsClear = true;
       var time = performance.now() * 0.001;
       ctx.clearRect(0, 0, W, H);
       for (var i = 0; i < MAX; i++){
         var L = life[i];
         if (L <= 0) continue;
         life[i] = L - 1;
+        if (life[i] <= 0) activeParticles--;
         ppx[i] = px[i]; ppy[i] = py[i];
         if (mode[i] === 0){
           /* ink drift: decelerate, waver like smoke, lift gently */
@@ -2530,6 +2542,7 @@ footer a:hover{color:var(--accent);}
         } else {
           ctx.clearRect(0, 0, W, H);
           life.fill(0);
+          activeParticles = 0; morphNeedsClear = false;
           halt = false;
         }
       }
@@ -2583,9 +2596,11 @@ footer a:hover{color:var(--accent);}
   workReader = (function(){
     var page = document.getElementById('work');
     if (!page || !book || !rows.length) return null;
-    if (new URLSearchParams(window.location.search).get('motion') === 'follow'){
+    var readingMode = new URLSearchParams(window.location.search).get('motion');
+    if (readingMode === 'follow' || readingMode === 'all'){
       return createFollowReader({
-        page: page, rows: rows, navigation: navigation, reduced: REDUCED, progressiveCount: 1
+        page: page, rows: rows, navigation: navigation, reduced: REDUCED,
+        progressiveCount: readingMode === 'all' ? rows.length : 1
       });
     }
     var items = rows.map(function(row, i){
@@ -2628,10 +2643,6 @@ footer a:hover{color:var(--accent);}
       var item = next();
       if (item && ((!items[0].seen) || (down && relativeTop(item) <= page.clientHeight * 0.72 + 2))) reveal(item);
     }
-    function turn(left){
-      navigation.goTo(left);
-    }
-
     items.forEach(function(item){
       item.detail.addEventListener('transitionend', function(e){
         if (busy === item && e.target === item.detail && e.propertyName === 'grid-template-rows') finish();
@@ -2652,35 +2663,11 @@ footer a:hover{color:var(--accent);}
     book.addEventListener('scroll', queue, { passive: true });
     window.addEventListener('resize', queue, { passive: true });
 
-    // Keep native touch momentum inside the long page; a fresh end swipe turns it.
-    page.setAttribute('data-lenis-prevent-touch', '');
-    var touch = null;
+    // Native reading still resets the manual auto-reveal cooldown. Navigation
+    // and boundary touch ownership live in the shared bridge below.
     page.addEventListener('touchstart', function(e){
-      if (e.touches.length !== 1 || !active()){ touch = null; return; }
-      var point = e.touches[0];
-      touch = { id: point.identifier, x: point.clientX, y: point.clientY,
-        end: bottom() && !next() && !busy, start: page.scrollTop <= 1 };
-      manualUntil = 0;
+      if (e.touches.length === 1 && active()) manualUntil = 0;
     }, { passive: true });
-    page.addEventListener('touchmove', function(e){
-      if (!touch) return;
-      // A different finger, pinch, incomplete landing or browser-owned gesture
-      // must not revive the earlier boundary swipe.
-      if (e.touches.length !== 1 || !active() || !e.cancelable || e.touches[0].identifier !== touch.id){
-        touch = null; return;
-      }
-      var dx = touch.x - e.touches[0].clientX, dy = touch.y - e.touches[0].clientY;
-      if (Math.abs(dy) <= Math.abs(dx)) return;
-      down = dy > 0;
-      queue();
-      if ((touch.end && dy > 64) || (touch.start && dy < -64)){
-        e.preventDefault();
-        turn(page.offsetLeft + (dy > 0 ? 1 : -1) * book.clientWidth);
-        touch = null;
-      }
-    }, { passive: false });
-    page.addEventListener('touchend', function(){ touch = null; }, { passive: true });
-    page.addEventListener('touchcancel', function(){ touch = null; }, { passive: true });
     document.addEventListener('keydown', function(e){
       if (!active() || (e.target.closest && e.target.closest('input,textarea,select,[contenteditable="true"],[role="slider"]'))) return;
       if (['ArrowDown', 'PageDown', ' '].indexOf(e.key) !== -1){ down = true; manualUntil = 0; }
@@ -2715,6 +2702,8 @@ footer a:hover{color:var(--accent);}
     };
   })();
 
+  createWorkTouchBridge({ reader: workReader, navigation: navigation, book: book });
+
   /* ---------- Desktop-only: cursor + preview + magnetic ---------- */
   if (FINE && !REDUCED){
     document.documentElement.classList.add('has-cursor');
@@ -2723,9 +2712,12 @@ footer a:hover{color:var(--accent);}
     var cursor = document.getElementById('cursor');
     var cursorLabel = document.getElementById('cursorLabel');
     var cx = -100, cy = -100, tx = -100, ty = -100;
+    var cursorMedia = window.matchMedia('(min-width:1024px) and (pointer:fine)');
+    var cursorFrame = 0, cursorTransform = '', previewTransform = '';
     window.addEventListener('mousemove', function(e){
       tx = e.clientX; ty = e.clientY;
       cursor.classList.add('on');
+      wakeCursor();
     }, { passive: true });
     document.addEventListener('mouseout', function(e){
       if (!e.relatedTarget) cursor.classList.remove('on');
@@ -2754,7 +2746,7 @@ footer a:hover{color:var(--accent);}
     var chB = pmedia.querySelector('.ch-b');
     var px = 0, py = 0, ptx = 0, pty = 0, previewOn = false;
     var rgbOff = 0; /* chromatic aberration, eased toward cursor speed */
-    window.addEventListener('mousemove', function(e){ ptx = e.clientX; pty = e.clientY; }, { passive: true });
+    window.addEventListener('mousemove', function(e){ ptx = e.clientX; pty = e.clientY; wakeCursor(); }, { passive: true });
 
     var preloadCache = {};
     rows.forEach(function(row){
@@ -2766,22 +2758,43 @@ footer a:hover{color:var(--accent);}
         pmedia.style.setProperty('--img', 'url("' + src + '")');
         preview.classList.add('on');
         previewOn = true;
+        wakeCursor();
       });
       head.addEventListener('mouseleave', function(){
         preview.classList.remove('on');
         previewOn = false;
+        wakeCursor();
       });
     });
 
     /* single rAF loop for cursor + preview lerp */
+    function cursorEnabled(){ return cursorMedia.matches && !document.hidden; }
+    function wakeCursor(){
+      if (cursorEnabled() && !cursorFrame) cursorFrame = requestAnimationFrame(loop);
+    }
+    function syncCursorAvailability(){
+      document.documentElement.classList.toggle('has-cursor', cursorMedia.matches);
+      if (!cursorEnabled()){
+        if (cursorFrame) cancelAnimationFrame(cursorFrame);
+        cursorFrame = 0;
+      } else wakeCursor();
+    }
     function loop(){
+      cursorFrame = 0;
+      if (!cursorEnabled()) return;
       cx += (tx - cx) * 0.22;
       cy += (ty - cy) * 0.22;
-      cursor.style.transform = 'translate(' + cx + 'px,' + cy + 'px)';
+      if (Math.abs(tx - cx) < 0.05) cx = tx;
+      if (Math.abs(ty - cy) < 0.05) cy = ty;
+      var nextCursor = 'translate(' + cx + 'px,' + cy + 'px)';
+      if (nextCursor !== cursorTransform){ cursor.style.transform = nextCursor; cursorTransform = nextCursor; }
 
       px += (ptx - px) * 0.1;
       py += (pty - py) * 0.1;
-      preview.style.transform = 'translate(' + (px + 28) + 'px,' + (py - 90) + 'px)';
+      if (Math.abs(ptx - px) < 0.05) px = ptx;
+      if (Math.abs(pty - py) < 0.05) py = pty;
+      var nextPreview = 'translate(' + (px + 28) + 'px,' + (py - 90) + 'px)';
+      if (nextPreview !== previewTransform){ preview.style.transform = nextPreview; previewTransform = nextPreview; }
 
       /* velocity-reactive RGB split: fast cursor -> wide aberration, idle -> 0 */
       if (previewOn){
@@ -2801,9 +2814,12 @@ footer a:hover{color:var(--accent);}
         chR.style.transform = 'translate(0,0)';
         chB.style.transform = 'translate(0,0)';
       }
-      requestAnimationFrame(loop);
+      if (cx !== tx || cy !== ty || px !== ptx || py !== pty || rgbOff !== 0) wakeCursor();
     }
-    requestAnimationFrame(loop);
+    window.addEventListener('resize', syncCursorAvailability, { passive: true });
+    document.addEventListener('visibilitychange', syncCursorAvailability);
+    if (cursorMedia.addEventListener) cursorMedia.addEventListener('change', syncCursorAvailability);
+    syncCursorAvailability();
 
     /* magnetic submit button, <= 8px */
     var btn = document.getElementById('submitBtn');
